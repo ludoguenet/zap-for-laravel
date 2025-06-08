@@ -1,0 +1,11 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+
+    level: 5
+
+    ignoreErrors:
+        - '#Trait .* is used zero times and is not analysed#'

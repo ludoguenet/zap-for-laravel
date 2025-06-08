@@ -1,0 +1,72 @@
+{
+    "name": "laraveljutsu/zap",
+    "description": "A flexible, performant, and developer-friendly schedule management system for Laravel",
+    "type": "library",
+    "keywords": ["laravel", "schedule", "management", "calendar", "booking"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Laravel Jutsu",
+            "email": "ludo@epekta.com",
+            "homepage": "https://laraveljutsu.net"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.20",
+        "larastan/larastan": "^3.0",
+        "pestphp/pest": "^3.7",
+        "orchestra/testbench": "^9.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zap\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zap\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Zap\\ZapServiceProvider"
+            ],
+            "aliases": {
+                "Zap": "Zap\\Facades\\Zap"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "pint": [
+            "@php ./vendor/bin/pint"
+        ],
+        "stan": [
+            "@php ./vendor/bin/phpstan analyse"
+        ],
+        "pest": [
+            "@php ./vendor/bin/pest"
+        ],
+        "qa": [
+            "@php ./vendor/bin/pint",
+            "@php ./vendor/bin/phpstan analyse",
+            "@php ./vendor/bin/pest"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

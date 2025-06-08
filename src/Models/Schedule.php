@@ -116,10 +116,12 @@ class Schedule extends Model
      */
     public function scopeForDate(Builder $query, string $date): void
     {
-        $query->where('start_date', '<=', $date)
-            ->where(function ($q) use ($date) {
+        $checkDate = \Carbon\Carbon::parse($date);
+
+        $query->where('start_date', '<=', $checkDate)
+            ->where(function ($q) use ($checkDate) {
                 $q->whereNull('end_date')
-                    ->orWhere('end_date', '>=', $date);
+                    ->orWhere('end_date', '>=', $checkDate);
             });
     }
 

@@ -35,7 +35,7 @@ A flexible, performant, and developer-friendly schedule management system with d
 ### 1. Install via Composer
 
 ```bash
-composer require ludoguenet/laravel-zap
+composer require laraveljutsu/zap
 ```
 
 ### 2. Publish Migrations and Configuration

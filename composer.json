@@ -63,10 +63,5 @@
             "@php ./vendor/bin/phpstan analyse",
             "@php ./vendor/bin/pest"
         ]
-    },
-    "config": {
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
     }
 }

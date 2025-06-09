@@ -1,6 +1,6 @@
 <div align="center">
 
-![Zap Logo](art/logo.png)
+<img src="art/logo.png" alt="Zap Logo" width="200">
 
 # ⚡ Laravel Zap
 
@@ -369,7 +369,7 @@ Laravel Zap is open-source software licensed under the [MIT License](LICENSE).
 
 ## 🔒 Security
 
-If you discover security vulnerabilities, please email **contact@laraveljutsu.net** instead of using the issue tracker.
+If you discover security vulnerabilities, please email **ludo@epekta.com** instead of using the issue tracker.
 
 ---
 
@@ -377,6 +377,6 @@ If you discover security vulnerabilities, please email **contact@laraveljutsu.ne
 
 **⚡ Made with ❤️ by [Laravel Jutsu](https://laraveljutsu.net) for the Laravel community ⚡**
 
-[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/docs/zap) • [Support](mailto:contact@laraveljutsu.net)
+[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/docs/zap) • [Support](mailto:ludo@epekta.com)
 
 </div>

@@ -1,90 +1,86 @@
-# ⚡ Laravel Zap
+<div align="center">
 
-```
- ███████╗ █████╗ ██████╗
- ╚══███╔╝██╔══██╗██╔══██╗
-   ███╔╝ ███████║██████╔╝
-  ███╔╝  ██╔══██║██╔═══╝
- ███████╗██║  ██║██║
- ╚══════╝╚═╝  ╚═╝╚═╝
-```
+![Zap Logo](art/logo.png)
+
+# ⚡ Laravel Zap
 
 **Lightning-fast schedule management for Laravel**
 
-A flexible, performant, and developer-friendly schedule management system with deep Laravel integration.
+[![PHP Version Require](http://poser.pugx.org/laraveljutsu/zap/require/php)](https://packagist.org/packages/laraveljutsu/zap)
+[![Laravel Version](https://img.shields.io/badge/Laravel-11.0+-FF2D20?style=flat&logo=laravel)](https://laravel.com)
+[![License](http://poser.pugx.org/laraveljutsu/zap/license)](https://packagist.org/packages/laraveljutsu/zap)
+
+*A flexible, performant, and developer-friendly schedule management system with deep Laravel integration.*
+
+[Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [Documentation](#-advanced-usage) • [Contributing](#-contributing)
+
+</div>
+
+---
 
 ## ✨ Features
 
-- **🏗️ Eloquent-based Schedule System**: User HasMany Schedules with period-based scheduling
-- **⚡ Business Rules Engine**: Configurable validation with Laravel validation integration
-- **⏰ Temporal Operations**: Carbon-based date/time manipulation
-- **🔍 Conflict Detection**: Automatic overlap checking with Laravel events
-- **🧩 Laravel Integration**: Facades, service providers, configuration
-- **👩‍💻 Developer Experience**: Fluent API, comprehensive testing
-- **🔄 Recurring Schedules**: Support for daily, weekly, monthly patterns
-- **📊 Availability Checking**: Smart time slot generation and conflict resolution
+- **🏗️ Eloquent Integration** - User HasMany Schedules with period-based scheduling
+- **⚡ Business Rules Engine** - Configurable validation with Laravel integration
+- **⏰ Temporal Operations** - Carbon-based date/time manipulation with timezone support
+- **🔍 Smart Conflict Detection** - Automatic overlap checking with customizable buffers
+- **🔄 Recurring Schedules** - Support for daily, weekly, monthly, and custom patterns
+- **📊 Availability Management** - Intelligent time slot generation and conflict resolution
+- **🧩 Laravel Native** - Facades, service providers, events, and configuration
+- **👩‍💻 Developer Experience** - Fluent API, comprehensive testing, and clear documentation
+
+---
 
 ## 📋 Requirements
 
-- PHP 8.2+
-- Laravel 11.0+
-- Carbon 2.0+ or 3.0+
+- **PHP** 8.2+
+- **Laravel** 11.0+
+- **Carbon** 2.0+ or 3.0+
+
+---
 
 ## 📦 Installation
 
-### 1. Install via Composer
+### Install Package
 
 ```bash
 composer require laraveljutsu/zap
 ```
 
-### 2. Publish Migrations and Configuration
+### Setup
 
 ```bash
-# Publish migrations
+# Publish and run migrations
 php artisan vendor:publish --tag=zap-migrations
+php artisan migrate
 
-# Publish configuration
+# Publish configuration (optional)
 php artisan vendor:publish --tag=zap-config
 ```
 
-### 3. Run Migrations
-
-```bash
-php artisan migrate
-```
-
-### 4. Add the HasSchedules Trait
-
-Add the `HasSchedules` trait to your User model (or any other schedulable model):
+### Add Trait to Models
 
 ```php
-<?php
-
-namespace App\Models;
-
 use Zap\Models\Concerns\HasSchedules;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
     use HasSchedules;
-
-    // ... rest of your model
+    // ...
 }
 ```
 
-## 🎯 Quick Start
+---
 
-### Basic Schedule Creation
+## 🚀 Quick Start
+
+### Basic Schedule
 
 ```php
 use Zap\Facades\Zap;
-use App\Models\User;
 
 $user = User::find(1);
 
-// Create a simple one-time schedule
 $schedule = Zap::for($user)
     ->named('Doctor Appointment')
     ->description('Annual checkup')
@@ -93,86 +89,70 @@ $schedule = Zap::for($user)
     ->save();
 ```
 
-### Recurring Schedules
+### Recurring Schedule
 
 ```php
-// Weekly recurring meeting
-$schedule = Zap::for($user)
+// Weekly team meeting
+$meeting = Zap::for($user)
     ->named('Team Standup')
     ->from('2025-01-01')
     ->to('2025-12-31')
     ->addPeriod('09:00', '09:30')
     ->weekly(['monday', 'wednesday', 'friday'])
     ->save();
-
-// Daily work schedule
-$workSchedule = Zap::for($user)
-    ->named('Work Hours')
-    ->from('2025-01-01')
-    ->addPeriod('09:00', '12:00') // Morning session
-    ->addPeriod('13:00', '17:00') // Afternoon session
-    ->daily()
-    ->noWeekends()
-    ->save();
 ```
 
-### Schedule with Validation Rules
+### Schedule with Rules
 
 ```php
 $schedule = Zap::for($user)
     ->named('Client Meeting')
     ->from('2025-03-15')
     ->addPeriod('14:00', '16:00')
-    ->noOverlap()                    // Prevent overlapping schedules
-    ->workingHoursOnly('09:00', '18:00')  // Only during business hours
+    ->noOverlap()                    // Prevent conflicts
+    ->workingHoursOnly('09:00', '18:00')  // Business hours only
     ->maxDuration(240)               // Max 4 hours
     ->withMetadata([
         'location' => 'Conference Room A',
-        'attendees' => ['client@example.com'],
         'priority' => 'high'
     ])
     ->save();
 ```
+
+---
 
 ## 🔧 Advanced Usage
 
 ### Availability Checking
 
 ```php
-// Check if user is available at specific time
-$isAvailable = $user->isAvailableAt('2025-03-15', '14:00', '16:00');
+// Check availability
+$available = $user->isAvailableAt('2025-03-15', '14:00', '16:00');
 
-// Get available time slots for a day
+// Get available slots
 $slots = $user->getAvailableSlots(
     date: '2025-03-15',
     dayStart: '09:00',
     dayEnd: '17:00',
-    slotDuration: 60 // 1-hour slots
+    slotDuration: 60
 );
 
 // Find next available slot
 $nextSlot = $user->getNextAvailableSlot(
     afterDate: '2025-03-15',
-    duration: 120, // 2 hours
+    duration: 120,
     dayStart: '09:00',
     dayEnd: '17:00'
 );
 ```
 
-### Conflict Detection
+### Conflict Management
 
 ```php
-// Check for conflicts before creating
+// Check for conflicts
 $conflicts = Zap::findConflicts($schedule);
 
-if (!empty($conflicts)) {
-    // Handle conflicts
-    foreach ($conflicts as $conflictingSchedule) {
-        echo "Conflict with: " . $conflictingSchedule->name;
-    }
-}
-
-// Automatic conflict detection (throws exception)
+// Automatic conflict prevention
 try {
     $schedule = Zap::for($user)
         ->from('2025-03-15')
@@ -181,58 +161,35 @@ try {
         ->save();
 } catch (ScheduleConflictException $e) {
     $conflicts = $e->getConflictingSchedules();
-    // Handle conflict...
 }
 ```
 
-### Querying Schedules
+### Schedule Queries
 
 ```php
-// Get schedules for a specific date
+// Get schedules for date
 $todaySchedules = $user->schedulesForDate(today());
 
-// Get schedules for date range
+// Get schedules for range
 $weekSchedules = $user->schedulesForDateRange('2025-03-11', '2025-03-17');
 
-// Get only active schedules
-$activeSchedules = $user->activeSchedules;
-
-// Get recurring schedules
-$recurringSchedules = $user->recurringSchedules;
-
-// Advanced queries using scopes
+// Advanced queries
 $schedules = Schedule::active()
     ->forDate('2025-03-15')
     ->whereHas('periods', function ($query) {
-        $query->where('start_time', '>=', '09:00')
-              ->where('end_time', '<=', '17:00');
+        $query->whereBetween('start_time', ['09:00', '17:00']);
     })
     ->get();
 ```
 
-## ✅ Laravel Validation
-
-Zap provides built-in validation through the `ValidationService`:
-
-```php
-// Validation is handled automatically when creating schedules
-$schedule = Zap::for($user)
-    ->named('Meeting')
-    ->from('2025-03-15')
-    ->addPeriod('09:00', '10:00')
-    ->noOverlap()                    // Built-in rule validation
-    ->workingHoursOnly('09:00', '18:00')  // Built-in rule validation
-    ->maxDuration(240)               // Built-in rule validation
-    ->save();
-```
+---
 
 ## ⚙️ Configuration
 
-The configuration file `config/zap.php` provides extensive customization options:
+Configure Zap in `config/zap.php`:
 
 ```php
 return [
-    // Default validation rules
     'default_rules' => [
         'no_overlap' => true,
         'working_hours' => [
@@ -242,113 +199,42 @@ return [
         ],
         'max_duration' => [
             'enabled' => false,
-            'minutes' => 480, // 8 hours
+            'minutes' => 480,
         ],
     ],
 
-    // Conflict detection settings
     'conflict_detection' => [
         'enabled' => true,
         'buffer_minutes' => 0,
         'strict_mode' => true,
     ],
 
-    // Recurring schedule settings
-    'recurring' => [
-        'process_days_ahead' => 30,
-        'cleanup_expired_after_days' => 90,
-    ],
-
-    // Cache configuration
     'cache' => [
         'enabled' => true,
         'ttl' => 3600,
         'prefix' => 'zap_schedule_',
     ],
-
-
 ];
 ```
 
-## 🔧 Recurring Schedules
-
-Recurring schedules are processed automatically by the system. You can configure the behavior in the `config/zap.php` file:
-
-```php
-'recurring' => [
-    'process_days_ahead' => 30, // Generate instances this many days ahead
-    'cleanup_expired_after_days' => 90, // Clean up expired schedules after X days
-    'max_instances' => 1000, // Maximum instances to generate at once
-],
-```
-
-## 📡 Events
-
-Zap fires events that you can listen to:
-
-```php
-// In your EventServiceProvider
-protected $listen = [
-    \Zap\Events\ScheduleCreated::class => [
-        \App\Listeners\SendScheduleNotification::class,
-    ],
-];
-```
-
-## 🧪 Testing
-
-Zap includes test helpers for easy testing:
-
-```php
-// Use the provided test helpers in your tests
-function createUser()
-{
-    return new class extends \Illuminate\Database\Eloquent\Model
-    {
-        use \Zap\Models\Concerns\HasSchedules;
-        protected $table = 'users';
-        public function getKey() { return 1; }
-    };
-}
-
-function createScheduleFor($schedulable, array $attributes = [])
-{
-    $attributes = array_merge([
-        'name' => 'Test Schedule',
-        'start_date' => '2025-01-01',
-        'periods' => [['start_time' => '09:00', 'end_time' => '10:00']],
-    ], $attributes);
-
-    $builder = \Zap\Facades\Zap::for($schedulable)
-        ->named($attributes['name'])
-        ->from($attributes['start_date']);
-
-    foreach ($attributes['periods'] as $period) {
-        $builder->addPeriod($period['start_time'], $period['end_time']);
-    }
-
-    return $builder->save();
-}
-```
+---
 
 ## 🎯 Use Cases
 
-### 📅 Appointment Booking System
+<details>
+<summary><strong>📅 Appointment Booking System</strong></summary>
 
 ```php
-// Doctor's availability
-$doctor = User::find(1);
-
+// Doctor availability
 $availability = Zap::for($doctor)
     ->named('Available Hours')
-    ->from('2025-03-01')
-    ->to('2025-03-31')
+    ->from('2025-03-01')->to('2025-03-31')
     ->addPeriod('09:00', '12:00')
     ->addPeriod('14:00', '17:00')
     ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
     ->save();
 
-// Book an appointment
+// Book appointment
 $appointment = Zap::for($doctor)
     ->named('Patient Consultation')
     ->from('2025-03-15')
@@ -356,13 +242,13 @@ $appointment = Zap::for($doctor)
     ->noOverlap()
     ->save();
 ```
+</details>
 
-### 🏢 Meeting Room Management
+<details>
+<summary><strong>🏢 Meeting Room Management</strong></summary>
 
 ```php
-$room = Room::find(1); // Assuming Room uses HasSchedules trait
-
-// Block room for maintenance
+// Room maintenance
 $maintenance = Zap::for($room)
     ->named('Monthly Maintenance')
     ->from('2025-03-01')
@@ -370,121 +256,127 @@ $maintenance = Zap::for($room)
     ->monthly(['day_of_month' => 1])
     ->save();
 
-// Book room for meeting
+// Book meeting room
 $meeting = Zap::for($room)
     ->named('Board Meeting')
-    ->description('Q1 Results Review')
     ->from('2025-03-15')
     ->addPeriod('09:00', '11:00')
     ->noOverlap()
     ->withMetadata([
         'organizer' => 'john@company.com',
-        'capacity_needed' => 12,
         'equipment' => ['projector', 'whiteboard']
     ])
     ->save();
 ```
+</details>
 
-### 👨‍💼 Employee Shift Management
+<details>
+<summary><strong>👨‍💼 Employee Shift Management</strong></summary>
 
 ```php
-$employee = User::find(1);
-
-// Regular work schedule
+// Regular shifts
 $workSchedule = Zap::for($employee)
     ->named('Regular Shift')
-    ->from('2025-01-01')
-    ->to('2025-12-31')
+    ->from('2025-01-01')->to('2025-12-31')
     ->addPeriod('09:00', '17:00')
     ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
     ->noWeekends()
     ->save();
 
-// Overtime shift
+// Overtime
 $overtime = Zap::for($employee)
     ->named('Overtime - Project Deadline')
     ->from('2025-03-15')
     ->addPeriod('18:00', '22:00')
-    ->maxDuration(240) // 4 hours max
+    ->maxDuration(240)
     ->save();
 ```
+</details>
 
-## 🛠️ Advanced Customization
+---
 
-### Custom Query Scopes
+## 📡 Events & Testing
+
+### Events
 
 ```php
-// Add custom scopes to your Schedule model
-class Schedule extends Model
-{
-    public function scopeForDepartment($query, string $department)
-    {
-        return $query->whereHas('schedulable', function ($query) use ($department) {
-            $query->where('department', $department);
-        });
-    }
-}
-
-// Usage
-$schedules = Schedule::forDepartment('Engineering')->get();
+// Listen to schedule events
+protected $listen = [
+    \Zap\Events\ScheduleCreated::class => [
+        \App\Listeners\SendScheduleNotification::class,
+    ],
+];
 ```
 
-## 🔧 Performance Optimization
-
-### Database Indexes
-
-Zap automatically creates optimized indexes, but you can add custom ones:
+### Testing Helpers
 
 ```php
-// Custom migration
+// Create test schedules easily
+$schedule = createScheduleFor($user, [
+    'name' => 'Test Meeting',
+    'start_date' => '2025-01-01',
+    'periods' => [['start_time' => '09:00', 'end_time' => '10:00']],
+]);
+```
+
+---
+
+## 🛠️ Performance & Optimization
+
+### Database Optimization
+
+```php
+// Custom indexes for better performance
 Schema::table('schedules', function (Blueprint $table) {
     $table->index(['schedulable_type', 'start_date', 'is_active']);
 });
 ```
 
-### Caching
+### Caching & Eager Loading
 
 ```php
-// Enable query caching
-'cache' => [
-    'enabled' => true,
-    'ttl' => 3600,
-    'tags' => ['zap', 'schedules'],
-],
-
-// Manual cache control
-Cache::tags(['zap', 'schedules'])->flush();
-```
-
-### Eager Loading
-
-```php
-// Optimize queries with eager loading
+// Optimize queries
 $schedules = Schedule::with(['periods', 'schedulable'])
     ->forDateRange('2025-03-01', '2025-03-31')
     ->get();
+
+// Cache control
+Cache::tags(['zap', 'schedules'])->flush();
 ```
-
-## 🤝 Contributing
-
-We welcome contributions! Feel free to submit issues and pull requests on GitHub.
-
-## 🔒 Security
-
-If you discover any security-related issues, please email contact@laraveljutsu.net instead of using the issue tracker.
-
-## 📜 License
-
-The MIT License (MIT). Please see [License File](LICENSE) for more information.
-
-## 🎉 Credits
-
-- **[Laravel Jutsu](https://laraveljutsu.net)** - Package development and maintenance
-- **Laravel Community** - Inspiration and best practices
-- **All Contributors** - Thank you for making this package better!
 
 ---
 
-<p align="center">
-    <strong>⚡ Made with ❤️ by Laravel Jutsu for the Laravel community ⚡</strong>
-</p>
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Setup
+
+```bash
+git clone https://github.com/laraveljutsu/zap.git
+cd zap
+composer install
+php artisan test
+```
+
+---
+
+## 📜 License
+
+Laravel Zap is open-source software licensed under the [MIT License](LICENSE).
+
+---
+
+## 🔒 Security
+
+If you discover security vulnerabilities, please email **contact@laraveljutsu.net** instead of using the issue tracker.
+
+---
+
+<div align="center">
+
+**⚡ Made with ❤️ by [Laravel Jutsu](https://laraveljutsu.net) for the Laravel community ⚡**
+
+[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/docs/zap) • [Support](mailto:contact@laraveljutsu.net)
+
+</div>

@@ -377,6 +377,6 @@ If you discover security vulnerabilities, please email **ludo@epekta.com** inste
 
 **⚡ Made with ❤️ by [Laravel Jutsu](https://laraveljutsu.net) for the Laravel community ⚡**
 
-[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/docs/zap) • [Support](mailto:ludo@epekta.com)
+[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/blog/laravel-zap) • [Support](mailto:ludo@epekta.com)
 
 </div>

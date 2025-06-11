@@ -3,9 +3,7 @@ includes:
 
 parameters:
     paths:
-        - src
+        - src/
+        - tests/phpstan/Users.php
 
     level: 5
-
-    ignoreErrors:
-        - '#Trait .* is used zero times and is not analysed#'

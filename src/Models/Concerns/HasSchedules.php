@@ -19,6 +19,8 @@ trait HasSchedules
 {
     /**
      * Get all schedules for this model.
+     *
+     * @return MorphMany<Schedule, $this>
      */
     public function schedules(): MorphMany
     {
@@ -27,6 +29,8 @@ trait HasSchedules
 
     /**
      * Get only active schedules.
+     *
+     * @return MorphMany<Schedule, $this>
      */
     public function activeSchedules(): MorphMany
     {
@@ -35,6 +39,8 @@ trait HasSchedules
 
     /**
      * Get schedules for a specific date.
+     *
+     * @return MorphMany<Schedule, $this>
      */
     public function schedulesForDate(string $date): MorphMany
     {
@@ -43,6 +49,8 @@ trait HasSchedules
 
     /**
      * Get schedules within a date range.
+     *
+     * @return MorphMany<Schedule, $this>
      */
     public function schedulesForDateRange(string $startDate, string $endDate): MorphMany
     {
@@ -51,6 +59,8 @@ trait HasSchedules
 
     /**
      * Get recurring schedules.
+     *
+     * @return MorphMany<Schedule, $this>
      */
     public function recurringSchedules(): MorphMany
     {
@@ -70,7 +80,7 @@ trait HasSchedules
      */
     public function hasScheduleConflict(Schedule $schedule): bool
     {
-        return app(ConflictDetectionService::class)->hasConflicts($this, $schedule);
+        return app(ConflictDetectionService::class)->hasConflicts($schedule);
     }
 
     /**
@@ -78,7 +88,7 @@ trait HasSchedules
      */
     public function findScheduleConflicts(Schedule $schedule): array
     {
-        return app(ConflictDetectionService::class)->findConflicts($this, $schedule);
+        return app(ConflictDetectionService::class)->findConflicts($schedule);
     }
 
     /**

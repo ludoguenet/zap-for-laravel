@@ -70,6 +70,8 @@ class Schedule extends Model
 
     /**
      * Get the schedule periods.
+     *
+     * @return HasMany<SchedulePeriod, $this>
      */
     public function periods(): HasMany
     {

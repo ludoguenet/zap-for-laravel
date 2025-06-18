@@ -35,4 +35,32 @@ describe('DateRange', function (): void {
 
         expect($rangeA->overlapsWith($rangeB))->toBeTrue();
     });
+
+    it('returns true when ranges are strictly equal', function (): void {
+        $rangeA = new DateRange(
+            Carbon::parse('18-06-2025 12:00'),
+            Carbon::parse('18-06-2025 18:00'),
+        );
+
+        $rangeB = new DateRange(
+            Carbon::parse('18-06-2025 12:00'),
+            Carbon::parse('18-06-2025 18:00'),
+        );
+
+        expect($rangeA->overlapsWith($rangeB))->toBeTrue();
+    });
+
+    it('returns false when one range ends exactly when the other starts', function (): void {
+        $rangeA = new DateRange(
+            Carbon::parse('18-06-2025 12:00'),
+            Carbon::parse('18-06-2025 14:00'),
+        );
+
+        $rangeB = new DateRange(
+            Carbon::parse('18-06-2025 14:00'),
+            Carbon::parse('18-06-2025 16:00'),
+        );
+
+        expect($rangeA->overlapsWith($rangeB))->toBeFalse();
+    });
 });

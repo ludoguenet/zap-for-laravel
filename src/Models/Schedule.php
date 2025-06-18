@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
+use Zap\Support\DateRange;
 
 /**
  * @property int $id
@@ -66,16 +68,6 @@ class Schedule extends Model
     public function schedulable(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    /**
-     * Get the schedule periods.
-     *
-     * @return HasMany<SchedulePeriod, $this>
-     */
-    public function periods(): HasMany
-    {
-        return $this->hasMany(SchedulePeriod::class);
     }
 
     /**
@@ -166,6 +158,43 @@ class Schedule extends Model
         }
 
         return false;
+    }
+
+    public function overlapsWithDateRange(Schedule $other): bool
+    {
+        [$thisRange, $otherRange] = $this->getFirstPeriodsAsDateRanges($other);
+
+        return $thisRange->overlapsWith($otherRange);
+    }
+
+    /**
+     * Extract the first DateRange from this and another schedule.
+     *
+     * @return array{DateRange, DateRange}
+     */
+    private function getFirstPeriodsAsDateRanges(Schedule $other): array
+    {
+        $thisPeriod = $this->periods->first();
+        $otherPeriod = $other->periods->first();
+
+        if (! $thisPeriod || ! $otherPeriod) {
+            throw new LogicException('Cannot compare schedules without periods.');
+        }
+
+        return [
+            new DateRange($thisPeriod->start_date_time, $thisPeriod->end_date_time),
+            new DateRange($otherPeriod->start_date_time, $otherPeriod->end_date_time),
+        ];
+    }
+
+    /**
+     * Get the schedule periods.
+     *
+     * @return HasMany<SchedulePeriod, $this>
+     */
+    public function periods(): HasMany
+    {
+        return $this->hasMany(SchedulePeriod::class);
     }
 
     /**

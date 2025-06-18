@@ -20,6 +20,7 @@ final readonly class DateRange
 
     public function overlapsWith(DateRange $otherRange): bool
     {
-        return true;
+        return $this->startDate->lt($otherRange->endDate)
+            && $this->endDate->gt($otherRange->startDate);
     }
 }

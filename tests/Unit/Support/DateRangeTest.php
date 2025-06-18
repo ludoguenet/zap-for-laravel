@@ -23,6 +23,16 @@ describe('DateRange', function (): void {
     });
 
     it('should detect overlap cases', function (): void {
-        todo('implement overlapsWith(DateRange $other): bool method');
+        $rangeA = new DateRange(
+            Carbon::parse('18-06-2025 12:00'),
+            Carbon::parse('18-06-2025 18:00'),
+        );
+
+        $rangeB = new DateRange(
+            Carbon::parse('18-06-2025 12:00'),
+            Carbon::parse('18-06-2025 18:00'),
+        );
+
+        expect($rangeA->overlapsWith($rangeB))->toBeTrue();
     });
 });

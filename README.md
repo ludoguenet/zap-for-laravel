@@ -356,7 +356,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 git clone https://github.com/laraveljutsu/zap.git
 cd zap
 composer install
-php artisan test
+vendor/bin/pest
 ```
 
 ---

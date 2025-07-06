@@ -118,28 +118,28 @@ it('can use convenience methods for schedule types', function () {
 
     expect($availability->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
 
-    // Test appointment method
+    // Test appointment method - use different date to avoid conflicts
     $appointment = Zap::for($user)
         ->appointment()
-        ->from('2025-01-01')
+        ->from('2025-01-02')
         ->addPeriod('10:00', '11:00')
         ->save();
 
     expect($appointment->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
 
-    // Test blocked method
+    // Test blocked method - use different date to avoid conflicts
     $blocked = Zap::for($user)
         ->blocked()
-        ->from('2025-01-01')
+        ->from('2025-01-03')
         ->addPeriod('12:00', '13:00')
         ->save();
 
     expect($blocked->schedule_type)->toBe(Schedule::TYPE_BLOCKED);
 
-    // Test custom method
+    // Test custom method - use different date to avoid conflicts
     $custom = Zap::for($user)
         ->custom()
-        ->from('2025-01-01')
+        ->from('2025-01-04')
         ->addPeriod('14:00', '15:00')
         ->save();
 

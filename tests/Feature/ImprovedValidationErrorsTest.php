@@ -134,6 +134,8 @@ describe('Improved Validation Error Messages', function () {
     });
 
     it('provides clear error message for weekend violation', function () {
+        config(['zap.default_rules.no_weekends.enabled' => true]);
+
         $user = createUser();
 
         // Find the next Saturday

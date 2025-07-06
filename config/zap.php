@@ -11,7 +11,10 @@ return [
     |
     */
     'default_rules' => [
-        'no_overlap' => true,
+        'no_overlap' => [
+            'enabled' => true,
+            'applies_to' => ['appointment', 'blocked'], // Which schedule types get this rule automatically
+        ],
         'working_hours' => [
             'enabled' => false,
             'start' => '09:00',
@@ -24,8 +27,8 @@ return [
         ],
         'no_weekends' => [
             'enabled' => false,
-            'saturday' => false,
-            'sunday' => false,
+            'saturday' => true,
+            'sunday' => true,
         ],
     ],
 

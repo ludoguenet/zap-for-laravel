@@ -240,20 +240,45 @@ class ValidationService
     {
         $errors = [];
 
+        // Validate explicitly provided rules (these are always enabled unless explicitly disabled)
         foreach ($rules as $ruleName => $ruleConfig) {
+            if (! $this->isExplicitRuleEnabled($ruleName, $ruleConfig)) {
+                continue;
+            }
+
             $ruleErrors = $this->validateRule($ruleName, $ruleConfig, $schedulable, $attributes, $periods);
             if (! empty($ruleErrors)) {
                 $errors = array_merge($errors, $ruleErrors);
             }
         }
 
-        // Automatically add no_overlap rule for appointment and blocked schedules
-        $scheduleType = $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM;
-        if (in_array($scheduleType, [\Zap\Models\Schedule::TYPE_APPOINTMENT, \Zap\Models\Schedule::TYPE_BLOCKED])) {
-            if (! isset($rules['no_overlap'])) {
-                $ruleErrors = $this->validateNoOverlap([], $schedulable, $attributes, $periods);
+        // Add enabled default rules that weren't explicitly provided
+        $defaultRules = config('zap.default_rules', []);
+        foreach ($defaultRules as $ruleName => $defaultConfig) {
+            // Skip if rule was explicitly provided
+            if (isset($rules[$ruleName])) {
+                continue;
+            }
+
+            // Check if default rule is enabled
+            if (! $this->isDefaultRuleEnabled($ruleName, $defaultConfig)) {
+                continue;
+            }
+
+            $ruleErrors = $this->validateRule($ruleName, $defaultConfig, $schedulable, $attributes, $periods);
+            if (! empty($ruleErrors)) {
                 $errors = array_merge($errors, $ruleErrors);
             }
+        }
+
+        // Automatically add no_overlap rule for appointment and blocked schedules if enabled
+        $scheduleType = $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM;
+        $noOverlapConfig = config('zap.default_rules.no_overlap', []);
+        $shouldApplyNoOverlap = $this->shouldApplyNoOverlapRule($scheduleType, $noOverlapConfig, $rules);
+
+        if ($shouldApplyNoOverlap) {
+            $ruleErrors = $this->validateNoOverlap($noOverlapConfig, $schedulable, $attributes, $periods);
+            $errors = array_merge($errors, $ruleErrors);
         }
 
         return $errors;
@@ -288,18 +313,125 @@ class ValidationService
     }
 
     /**
+     * Merge provided rules with default rules from configuration.
+     */
+    protected function mergeWithDefaultRules(array $rules): array
+    {
+        $defaultRules = config('zap.default_rules', []);
+
+        // Start with default rules
+        $mergedRules = $defaultRules;
+
+        // Override with provided rules
+        foreach ($rules as $ruleName => $ruleConfig) {
+            $mergedRules[$ruleName] = $ruleConfig;
+        }
+
+        return $mergedRules;
+    }
+
+    /**
+     * Check if an explicitly provided rule is enabled.
+     */
+    protected function isExplicitRuleEnabled(string $ruleName, $ruleConfig): bool
+    {
+        // If rule config is just a boolean, use it directly
+        if (is_bool($ruleConfig)) {
+            return $ruleConfig;
+        }
+
+        // If rule config is an array, check for 'enabled' key
+        if (is_array($ruleConfig)) {
+            // If the rule has explicit enabled/disabled setting, use it
+            if (isset($ruleConfig['enabled'])) {
+                return $ruleConfig['enabled'];
+            }
+
+            // If the rule config is empty (like from builder methods), check global config
+            if (empty($ruleConfig)) {
+                $defaultConfig = config("zap.default_rules.{$ruleName}", []);
+
+                return $this->isDefaultRuleEnabled($ruleName, $defaultConfig);
+            }
+
+            // For explicit rules with config (like workingHoursOnly(), maxDuration()),
+            // they should be enabled since they were explicitly requested
+            return true;
+        }
+
+        // For other types (explicit rule config provided), consider the rule enabled
+        return $ruleConfig !== null;
+    }
+
+    /**
+     * Check if a default rule is enabled.
+     */
+    protected function isDefaultRuleEnabled(string $ruleName, $ruleConfig): bool
+    {
+        // If rule config is just a boolean, use it directly
+        if (is_bool($ruleConfig)) {
+            return $ruleConfig;
+        }
+
+        // If rule config is an array, check for 'enabled' key
+        if (is_array($ruleConfig)) {
+            return $ruleConfig['enabled'] ?? true;
+        }
+
+        // For other types, consider the rule enabled if config is provided
+        return $ruleConfig !== null;
+    }
+
+    /**
+     * Check if a rule is enabled (legacy method - kept for compatibility).
+     */
+    protected function isRuleEnabled(string $ruleName, $ruleConfig): bool
+    {
+        return $this->isExplicitRuleEnabled($ruleName, $ruleConfig);
+    }
+
+    /**
+     * Determine if no_overlap rule should be applied.
+     */
+    protected function shouldApplyNoOverlapRule(string $scheduleType, array $noOverlapConfig, array $providedRules): bool
+    {
+        // If no_overlap rule was explicitly provided, don't auto-apply
+        if (isset($providedRules['no_overlap'])) {
+            return false;
+        }
+
+        // Check if no_overlap rule is enabled in config
+        if (! ($noOverlapConfig['enabled'] ?? false)) {
+            return false;
+        }
+
+        // Check if this schedule type should get the no_overlap rule
+        $appliesTo = $noOverlapConfig['applies_to'] ?? [];
+
+        return in_array($scheduleType, $appliesTo);
+    }
+
+    /**
      * Validate working hours rule.
      */
     protected function validateWorkingHours($config, array $periods): array
     {
-        if (! is_array($config) || empty($config['start']) || empty($config['end'])) {
+        if (! is_array($config)) {
+            return [];
+        }
+
+        // Support both old and new configuration key formats
+        $startTime = $config['start_time'] ?? $config['start'] ?? null;
+        $endTime = $config['end_time'] ?? $config['end'] ?? null;
+
+        if (empty($startTime) || empty($endTime)) {
             return [];
         }
 
         $errors = [];
         $baseDate = '2024-01-01'; // Use a consistent base date for time parsing
-        $workStart = \Carbon\Carbon::parse($baseDate.' '.$config['start']);
-        $workEnd = \Carbon\Carbon::parse($baseDate.' '.$config['end']);
+        $workStart = \Carbon\Carbon::parse($baseDate.' '.$startTime);
+        $workEnd = \Carbon\Carbon::parse($baseDate.' '.$endTime);
 
         foreach ($periods as $index => $period) {
             if (empty($period['start_time']) || empty($period['end_time'])) {
@@ -311,7 +443,7 @@ class ValidationService
 
             if ($periodStart->lt($workStart) || $periodEnd->gt($workEnd)) {
                 $errors["periods.{$index}.working_hours"] =
-                    "Period {$period['start_time']}-{$period['end_time']} is outside working hours ({$config['start']}-{$config['end']})";
+                    "Period {$period['start_time']}-{$period['end_time']} is outside working hours ({$startTime}-{$endTime})";
             }
         }
 
@@ -392,6 +524,11 @@ class ValidationService
      */
     protected function validateNoOverlap($config, Model $schedulable, array $attributes, array $periods): array
     {
+        // Check if global conflict detection is disabled
+        if (! config('zap.conflict_detection.enabled', true)) {
+            return [];
+        }
+
         // Create a temporary schedule for conflict checking
         $tempSchedule = new \Zap\Models\Schedule([
             'schedulable_type' => get_class($schedulable),

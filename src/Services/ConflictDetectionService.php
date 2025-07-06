@@ -49,19 +49,24 @@ class ConflictDetectionService
      */
     protected function shouldCheckConflict(Schedule $schedule1, Schedule $schedule2): bool
     {
-        // If either schedule allows overlaps (availability), no conflict
-        if ($schedule1->allowsOverlaps() || $schedule2->allowsOverlaps()) {
+        // Availability schedules never conflict with anything (they allow overlaps)
+        if ($schedule1->schedule_type === Schedule::TYPE_AVAILABILITY ||
+            $schedule2->schedule_type === Schedule::TYPE_AVAILABILITY) {
             return false;
         }
 
-        // If either schedule prevents overlaps (appointment/blocked), check conflict
-        if ($schedule1->preventsOverlaps() || $schedule2->preventsOverlaps()) {
-            return true;
+        // Check if no_overlap rule is enabled and applies to these schedule types
+        $noOverlapConfig = config('zap.default_rules.no_overlap', []);
+        if (! ($noOverlapConfig['enabled'] ?? true)) {
+            return false;
         }
 
-        // For custom schedules, we need to check if they have the noOverlap rule
-        // This is handled at the validation level, not here
-        return false;
+        $appliesTo = $noOverlapConfig['applies_to'] ?? ['appointment', 'blocked'];
+        $schedule1ShouldCheck = in_array($schedule1->schedule_type, $appliesTo);
+        $schedule2ShouldCheck = in_array($schedule2->schedule_type, $appliesTo);
+
+        // Both schedules must be of types that should be checked for conflicts
+        return $schedule1ShouldCheck && $schedule2ShouldCheck;
     }
 
     /**

@@ -38,6 +38,36 @@ trait HasSchedules
     }
 
     /**
+     * Get availability schedules.
+     *
+     * @return MorphMany<Schedule, $this>
+     */
+    public function availabilitySchedules(): MorphMany
+    {
+        return $this->schedules()->availability();
+    }
+
+    /**
+     * Get appointment schedules.
+     *
+     * @return MorphMany<Schedule, $this>
+     */
+    public function appointmentSchedules(): MorphMany
+    {
+        return $this->schedules()->appointments();
+    }
+
+    /**
+     * Get blocked schedules.
+     *
+     * @return MorphMany<Schedule, $this>
+     */
+    public function blockedSchedules(): MorphMany
+    {
+        return $this->schedules()->blocked();
+    }
+
+    /**
      * Get schedules for a specific date.
      *
      * @return MorphMany<Schedule, $this>
@@ -65,6 +95,16 @@ trait HasSchedules
     public function recurringSchedules(): MorphMany
     {
         return $this->schedules()->recurring();
+    }
+
+    /**
+     * Get schedules of a specific type.
+     *
+     * @return MorphMany<Schedule, $this>
+     */
+    public function schedulesOfType(string $type): MorphMany
+    {
+        return $this->schedules()->ofType($type);
     }
 
     /**
@@ -105,7 +145,12 @@ trait HasSchedules
             ->get();
 
         foreach ($schedules as $schedule) {
-            if ($this->scheduleBlocksTime($schedule, $date, $startTime, $endTime)) {
+            // For backward compatibility, treat null/custom schedules as blocking
+            $shouldBlock = $schedule->schedule_type === null ||
+                          $schedule->schedule_type === \Zap\Models\Schedule::TYPE_CUSTOM ||
+                          $schedule->preventsOverlaps();
+
+            if ($shouldBlock && $this->scheduleBlocksTime($schedule, $date, $startTime, $endTime)) {
                 return false;
             }
         }

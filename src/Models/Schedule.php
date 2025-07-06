@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $description
  * @property string $schedulable_type
  * @property int $schedulable_id
+ * @property string $schedule_type
  * @property Carbon $start_date
  * @property Carbon|null $end_date
  * @property bool $is_recurring
@@ -32,6 +33,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Schedule extends Model
 {
     /**
+     * Schedule type constants.
+     */
+    public const TYPE_AVAILABILITY = 'availability';
+
+    public const TYPE_APPOINTMENT = 'appointment';
+
+    public const TYPE_BLOCKED = 'blocked';
+
+    public const TYPE_CUSTOM = 'custom';
+
+    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -39,6 +51,7 @@ class Schedule extends Model
         'schedulable_id',
         'name',
         'description',
+        'schedule_type',
         'start_date',
         'end_date',
         'is_recurring',
@@ -59,6 +72,11 @@ class Schedule extends Model
         'metadata' => 'array',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * The attributes that should be guarded.
+     */
+    protected $guarded = [];
 
     /**
      * Get the parent schedulable model.
@@ -111,6 +129,38 @@ class Schedule extends Model
     public function scopeRecurring(Builder $query): void
     {
         $query->where('is_recurring', true);
+    }
+
+    /**
+     * Scope a query to only include schedules of a specific type.
+     */
+    public function scopeOfType(Builder $query, string $type): void
+    {
+        $query->where('schedule_type', $type);
+    }
+
+    /**
+     * Scope a query to only include availability schedules.
+     */
+    public function scopeAvailability(Builder $query): void
+    {
+        $query->where('schedule_type', self::TYPE_AVAILABILITY);
+    }
+
+    /**
+     * Scope a query to only include appointment schedules.
+     */
+    public function scopeAppointments(Builder $query): void
+    {
+        $query->where('schedule_type', self::TYPE_APPOINTMENT);
+    }
+
+    /**
+     * Scope a query to only include blocked schedules.
+     */
+    public function scopeBlocked(Builder $query): void
+    {
+        $query->where('schedule_type', self::TYPE_BLOCKED);
     }
 
     /**
@@ -191,5 +241,64 @@ class Schedule extends Model
 
         return $checkDate->greaterThanOrEqualTo($startDate) &&
                ($endDate === null || $checkDate->lessThanOrEqualTo($endDate));
+    }
+
+    /**
+     * Check if this schedule is of availability type.
+     */
+    public function isAvailability(): bool
+    {
+        return $this->schedule_type === self::TYPE_AVAILABILITY;
+    }
+
+    /**
+     * Check if this schedule is of appointment type.
+     */
+    public function isAppointment(): bool
+    {
+        return $this->schedule_type === self::TYPE_APPOINTMENT;
+    }
+
+    /**
+     * Check if this schedule is of blocked type.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->schedule_type === self::TYPE_BLOCKED;
+    }
+
+    /**
+     * Check if this schedule is of custom type.
+     */
+    public function isCustom(): bool
+    {
+        return $this->schedule_type === self::TYPE_CUSTOM;
+    }
+
+    /**
+     * Check if this schedule should prevent overlaps (appointments and blocked schedules).
+     */
+    public function preventsOverlaps(): bool
+    {
+        return in_array($this->schedule_type, [self::TYPE_APPOINTMENT, self::TYPE_BLOCKED]);
+    }
+
+    /**
+     * Check if this schedule allows overlaps (availability schedules).
+     */
+    public function allowsOverlaps(): bool
+    {
+        return $this->schedule_type === self::TYPE_AVAILABILITY ||
+               $this->schedule_type === self::TYPE_CUSTOM ||
+               $this->schedule_type === null; // For backward compatibility
+    }
+
+    /**
+     * Get the schedule type attribute, handling cases where column doesn't exist.
+     */
+    public function getScheduleTypeAttribute($value)
+    {
+        // If the column doesn't exist or is null, default to custom
+        return $value ?? self::TYPE_CUSTOM;
     }
 }

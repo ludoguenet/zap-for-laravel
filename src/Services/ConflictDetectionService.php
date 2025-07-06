@@ -33,12 +33,35 @@ class ConflictDetectionService
         $otherSchedules = $this->getOtherSchedules($schedule);
 
         foreach ($otherSchedules as $otherSchedule) {
-            if ($this->schedulesOverlap($schedule, $otherSchedule, $bufferMinutes)) {
+            // Check conflicts based on schedule types and rules
+            $shouldCheckConflict = $this->shouldCheckConflict($schedule, $otherSchedule);
+
+            if ($shouldCheckConflict && $this->schedulesOverlap($schedule, $otherSchedule, $bufferMinutes)) {
                 $conflicts[] = $otherSchedule;
             }
         }
 
         return $conflicts;
+    }
+
+    /**
+     * Determine if two schedules should be checked for conflicts.
+     */
+    protected function shouldCheckConflict(Schedule $schedule1, Schedule $schedule2): bool
+    {
+        // If either schedule allows overlaps (availability), no conflict
+        if ($schedule1->allowsOverlaps() || $schedule2->allowsOverlaps()) {
+            return false;
+        }
+
+        // If either schedule prevents overlaps (appointment/blocked), check conflict
+        if ($schedule1->preventsOverlaps() || $schedule2->preventsOverlaps()) {
+            return true;
+        }
+
+        // For custom schedules, we need to check if they have the noOverlap rule
+        // This is handled at the validation level, not here
+        return false;
     }
 
     /**
@@ -325,32 +348,12 @@ class ConflictDetectionService
      */
     protected function getOtherSchedules(Schedule $schedule): Collection
     {
-        $query = Schedule::where('schedulable_type', $schedule->schedulable_type)
+        return Schedule::where('schedulable_type', $schedule->schedulable_type)
             ->where('schedulable_id', $schedule->schedulable_id)
-            ->where('is_active', true);
-
-        // Exclude the current schedule if it exists in database
-        if ($schedule->exists) {
-            $query->where('id', '!=', $schedule->id);
-        }
-
-        // Only get schedules that could potentially overlap
-        if ($schedule->end_date) {
-            $query->where(function ($q) use ($schedule) {
-                $q->where('start_date', '<=', $schedule->end_date)
-                    ->where(function ($q2) use ($schedule) {
-                        $q2->whereNull('end_date')
-                            ->orWhere('end_date', '>=', $schedule->start_date);
-                    });
-            });
-        } else {
-            $query->where(function ($q) use ($schedule) {
-                $q->whereNull('end_date')
-                    ->orWhere('end_date', '>=', $schedule->start_date);
-            });
-        }
-
-        return $query->with('periods')->get();
+            ->where('id', '!=', $schedule->id)
+            ->active()
+            ->with('periods')
+            ->get();
     }
 
     /**

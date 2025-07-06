@@ -31,7 +31,7 @@ class ValidationService
         }
 
         // Business rules validation
-        $ruleErrors = $this->validateBusinessRules($schedulable, $attributes, $periods, $rules);
+        $ruleErrors = $this->validateRules($rules, $schedulable, $attributes, $periods);
         if (! empty($ruleErrors)) {
             $errors = array_merge($errors, $ruleErrors);
         }
@@ -234,23 +234,24 @@ class ValidationService
     }
 
     /**
-     * Validate business rules.
+     * Validate schedule rules.
      */
-    protected function validateBusinessRules(
-        Model $schedulable,
-        array $attributes,
-        array $periods,
-        array $rules
-    ): array {
+    protected function validateRules(array $rules, Model $schedulable, array $attributes, array $periods): array
+    {
         $errors = [];
 
-        // Merge with default rules
-        $defaultRules = config('zap.default_rules', []);
-        $allRules = array_merge($defaultRules, $rules);
-
-        foreach ($allRules as $ruleName => $ruleConfig) {
+        foreach ($rules as $ruleName => $ruleConfig) {
             $ruleErrors = $this->validateRule($ruleName, $ruleConfig, $schedulable, $attributes, $periods);
             if (! empty($ruleErrors)) {
+                $errors = array_merge($errors, $ruleErrors);
+            }
+        }
+
+        // Automatically add no_overlap rule for appointment and blocked schedules
+        $scheduleType = $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM;
+        if (in_array($scheduleType, [\Zap\Models\Schedule::TYPE_APPOINTMENT, \Zap\Models\Schedule::TYPE_BLOCKED])) {
+            if (! isset($rules['no_overlap'])) {
+                $ruleErrors = $this->validateNoOverlap([], $schedulable, $attributes, $periods);
                 $errors = array_merge($errors, $ruleErrors);
             }
         }
@@ -401,6 +402,7 @@ class ValidationService
             'is_recurring' => $attributes['is_recurring'] ?? false,
             'frequency' => $attributes['frequency'] ?? null,
             'frequency_config' => $attributes['frequency_config'] ?? null,
+            'schedule_type' => $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM,
         ]);
 
         // Create temporary periods
@@ -416,9 +418,14 @@ class ValidationService
         }
         $tempSchedule->setRelation('periods', $tempPeriods);
 
-        // Use the conflict detection service to find conflicts
-        $conflictService = app(\Zap\Services\ConflictDetectionService::class);
-        $conflicts = $conflictService->findConflicts($tempSchedule);
+        // For custom schedules with noOverlap rule, check conflicts with all other schedules
+        if ($tempSchedule->schedule_type === \Zap\Models\Schedule::TYPE_CUSTOM) {
+            $conflicts = $this->findCustomScheduleConflicts($tempSchedule);
+        } else {
+            // Use the conflict detection service for typed schedules
+            $conflictService = app(\Zap\Services\ConflictDetectionService::class);
+            $conflicts = $conflictService->findConflicts($tempSchedule);
+        }
 
         if (! empty($conflicts)) {
             // Build a detailed conflict message
@@ -430,6 +437,33 @@ class ValidationService
         }
 
         return [];
+    }
+
+    /**
+     * Find conflicts for custom schedules with noOverlap rule.
+     */
+    protected function findCustomScheduleConflicts(\Zap\Models\Schedule $schedule): array
+    {
+        $conflicts = [];
+        $bufferMinutes = config('zap.conflict_detection.buffer_minutes', 0);
+
+        // Get all other active schedules for the same schedulable
+        $otherSchedules = \Zap\Models\Schedule::where('schedulable_type', $schedule->schedulable_type)
+            ->where('schedulable_id', $schedule->schedulable_id)
+            ->where('id', '!=', $schedule->id)
+            ->active()
+            ->with('periods')
+            ->get();
+
+        $conflictService = app(\Zap\Services\ConflictDetectionService::class);
+
+        foreach ($otherSchedules as $otherSchedule) {
+            if ($conflictService->schedulesOverlap($schedule, $otherSchedule, $bufferMinutes)) {
+                $conflicts[] = $otherSchedule;
+            }
+        }
+
+        return $conflicts;
     }
 
     /**

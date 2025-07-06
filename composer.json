@@ -59,7 +59,7 @@
             "@php ./vendor/bin/pest"
         ],
         "qa": [
-            "@php ./vendor/bin/pint",
+            "@php ./vendor/bin/pint --parallel",
             "@php ./vendor/bin/phpstan analyse",
             "@php ./vendor/bin/pest"
         ]

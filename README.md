@@ -12,7 +12,7 @@
 
 *A flexible, performant, and developer-friendly schedule management system with deep Laravel integration.*
 
-[Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [Documentation](#-advanced-usage) • [Contributing](#-contributing)
+[Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [Schedule Types](#-schedule-types) • [Documentation](#-advanced-usage) • [Contributing](#-contributing)
 
 </div>
 
@@ -22,10 +22,12 @@
 
 - **🏗️ Eloquent Integration** - User HasMany Schedules with period-based scheduling
 - **⚡ Business Rules Engine** - Configurable validation with Laravel integration
+- **🎛️ Granular Rule Control** - Individual rule enable/disable with per-schedule overrides
 - **⏰ Temporal Operations** - Carbon-based date/time manipulation with timezone support
 - **🔍 Smart Conflict Detection** - Automatic overlap checking with customizable buffers
 - **🔄 Recurring Schedules** - Support for daily, weekly, monthly, and custom patterns
 - **📊 Availability Management** - Intelligent time slot generation and conflict resolution
+- **🎯 Schedule Types** - Availability, appointment, blocked, and custom scheduling types
 - **🧩 Laravel Native** - Facades, service providers, events, and configuration
 - **👩‍💻 Developer Experience** - Fluent API, comprehensive testing, and clear documentation
 
@@ -119,6 +121,112 @@ $schedule = Zap::for($user)
     ->save();
 ```
 
+### Schedule with Rule Overrides
+
+```php
+// Override specific rules for this schedule
+$schedule = Zap::for($user)
+    ->named('Weekend Emergency')
+    ->from('2025-03-16')
+    ->addPeriod('08:00', '20:00')
+    ->withRule('working_hours', ['enabled' => false])  // Allow outside business hours
+    ->withRule('no_weekends', ['enabled' => false])    // Allow weekend scheduling
+    ->withRule('max_duration', ['enabled' => false])   // No duration limits
+    ->save();
+```
+
+---
+
+## 🎯 Schedule Types
+
+Laravel Zap supports four distinct schedule types to handle complex scheduling scenarios:
+
+### 1. **Availability Schedules**
+Working hours or open time slots that **allow overlaps**. Perfect for defining when someone is available.
+
+```php
+// Define working hours
+$availability = Zap::for($doctor)
+    ->named('Office Hours')
+    ->description('Available for patient appointments')
+    ->availability()
+    ->from('2025-01-01')
+    ->to('2025-12-31')
+    ->addPeriod('09:00', '12:00') // Morning session
+    ->addPeriod('14:00', '17:00') // Afternoon session
+    ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    ->save();
+```
+
+### 2. **Appointment Schedules**
+Actual bookings that **prevent overlaps**. These are concrete appointments scheduled within availability windows.
+
+```php
+// Create a patient appointment
+$appointment = Zap::for($doctor)
+    ->named('Patient A - Checkup')
+    ->description('Annual checkup appointment')
+    ->appointment()
+    ->from('2025-01-15')
+    ->addPeriod('10:00', '11:00')
+    ->withMetadata([
+        'patient_id' => 1,
+        'appointment_type' => 'checkup',
+        'notes' => 'Annual physical examination'
+    ])
+    ->save();
+```
+
+### 3. **Blocked Schedules**
+Unavailable time periods that **prevent overlaps**. Used for lunch breaks, holidays, or maintenance.
+
+```php
+// Define lunch break
+$lunchBreak = Zap::for($doctor)
+    ->named('Lunch Break')
+    ->description('Unavailable for appointments')
+    ->blocked()
+    ->from('2025-01-01')
+    ->to('2025-12-31')
+    ->addPeriod('12:00', '13:00')
+    ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    ->save();
+```
+
+### 4. **Custom Schedules**
+Default type for backward compatibility. Behavior depends on explicit rules.
+
+```php
+// Custom schedule with explicit rules
+$custom = Zap::for($user)
+    ->named('Custom Event')
+    ->custom()
+    ->from('2025-01-15')
+    ->addPeriod('15:00', '16:00')
+    ->noOverlap() // Explicitly prevent overlaps
+    ->save();
+```
+
+### Schedule Type Methods
+
+```php
+// Query schedules by type
+$availability = Schedule::availability()->get();
+$appointments = Schedule::appointments()->get();
+$blocked = Schedule::blocked()->get();
+
+// Using relationship methods
+$userAppointments = $user->appointmentSchedules()->get();
+$userAvailability = $user->availabilitySchedules()->get();
+$userBlocked = $user->blockedSchedules()->get();
+
+// Check schedule type
+$schedule->isAvailability(); // true/false
+$schedule->isAppointment();  // true/false
+$schedule->isBlocked();      // true/false
+$schedule->isCustom();       // true/false
+```
+
 ---
 
 ## 🔧 Advanced Usage
@@ -164,6 +272,37 @@ try {
 }
 ```
 
+### Advanced Rule Control
+
+```php
+// Disable overlap checking for availability schedules only
+config(['zap.default_rules.no_overlap.applies_to' => ['appointment', 'blocked']]);
+
+// Create availability that can overlap
+$availability = Zap::for($user)
+    ->named('General Availability')
+    ->availability()  // Schedule type: availability
+    ->from('2025-03-15')
+    ->addPeriod('09:00', '17:00')
+    ->save(); // No overlap validation applied
+
+// Create appointment that requires validation
+$appointment = Zap::for($user)
+    ->named('Client Meeting')
+    ->appointment()  // Schedule type: appointment
+    ->from('2025-03-15')
+    ->addPeriod('10:00', '11:00')
+    ->save(); // Overlap validation applied
+
+// Emergency override for specific case
+$emergency = Zap::for($user)
+    ->named('Emergency Surgery')
+    ->from('2025-03-15')
+    ->addPeriod('10:30', '12:00')
+    ->withRule('no_overlap', ['enabled' => false])
+    ->save(); // Bypasses overlap validation
+```
+
 ### Schedule Queries
 
 ```php
@@ -191,30 +330,82 @@ Configure Zap in `config/zap.php`:
 ```php
 return [
     'default_rules' => [
-        'no_overlap' => true,
+        'no_overlap' => [
+            'enabled' => true,
+            'applies_to' => ['appointment', 'blocked'], // Granular control
+        ],
         'working_hours' => [
             'enabled' => false,
             'start' => '09:00',
             'end' => '17:00',
+            'timezone' => null, // Uses app timezone if null
         ],
         'max_duration' => [
             'enabled' => false,
-            'minutes' => 480,
+            'minutes' => 480, // 8 hours
+        ],
+        'no_weekends' => [
+            'enabled' => false,
+            'saturday' => true,
+            'sunday' => true,
         ],
     ],
 
     'conflict_detection' => [
         'enabled' => true,
-        'buffer_minutes' => 0,
-        'strict_mode' => true,
+        'buffer_minutes' => 0, // Buffer time between schedules
+        'auto_resolve' => false, // Automatically resolve conflicts
+        'strict_mode' => true, // Throw exceptions on conflicts
     ],
 
-    'cache' => [
-        'enabled' => true,
-        'ttl' => 3600,
-        'prefix' => 'zap_schedule_',
+    'validation' => [
+        'require_future_dates' => true, // Schedules must be in the future
+        'max_date_range' => 365, // Maximum days between start and end date
+        'min_period_duration' => 15, // Minimum period duration in minutes
+        'max_period_duration' => 480, // Maximum period duration in minutes
+        'max_periods_per_schedule' => 50, // Maximum periods per schedule
+        'allow_overlapping_periods' => false, // Allow periods to overlap within same schedule
     ],
 ];
+```
+
+### Individual Rule Control
+
+Control each validation rule independently:
+
+```php
+// Disable specific rules
+config(['zap.default_rules.working_hours.enabled' => false]);
+config(['zap.default_rules.no_overlap.enabled' => false]);
+
+// Granular overlap control - only check overlaps for specific schedule types
+config(['zap.default_rules.no_overlap.applies_to' => ['appointment']]);
+
+// Allow weekend scheduling
+config(['zap.default_rules.no_weekends.enabled' => false]);
+```
+
+### Per-Schedule Rule Override
+
+Override rules for specific schedules:
+
+```php
+// Emergency appointment that can overlap
+$schedule = Zap::for($user)
+    ->named('Emergency Consultation')
+    ->from('2025-03-15')
+    ->addPeriod('10:00', '11:00')
+    ->withRule('no_overlap', ['enabled' => false])
+    ->save();
+
+// Weekend work with extended hours
+$schedule = Zap::for($user)
+    ->named('Weekend Project')
+    ->from('2025-03-16') // Saturday
+    ->addPeriod('08:00', '20:00')
+    ->withRule('working_hours', ['enabled' => false])
+    ->withRule('no_weekends', ['enabled' => false])
+    ->save();
 ```
 
 ---
@@ -222,24 +413,45 @@ return [
 ## 🎯 Use Cases
 
 <details>
-<summary><strong>📅 Appointment Booking System</strong></summary>
+<summary><strong>📅 Hospital Scheduling System</strong></summary>
 
 ```php
-// Doctor availability
+// Doctor's working hours (availability)
 $availability = Zap::for($doctor)
-    ->named('Available Hours')
-    ->from('2025-03-01')->to('2025-03-31')
+    ->named('Dr. Smith - Office Hours')
+    ->availability()
+    ->from('2025-01-01')
+    ->to('2025-12-31')
     ->addPeriod('09:00', '12:00')
     ->addPeriod('14:00', '17:00')
     ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
     ->save();
 
-// Book appointment
-$appointment = Zap::for($doctor)
-    ->named('Patient Consultation')
-    ->from('2025-03-15')
-    ->addPeriod('10:00', '10:30')
-    ->noOverlap()
+// Lunch break (blocked)
+$lunchBreak = Zap::for($doctor)
+    ->named('Lunch Break')
+    ->blocked()
+    ->from('2025-01-01')
+    ->to('2025-12-31')
+    ->addPeriod('12:00', '13:00')
+    ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    ->save();
+
+// Patient appointments
+$appointment1 = Zap::for($doctor)
+    ->named('Patient A - Consultation')
+    ->appointment()
+    ->from('2025-01-15')
+    ->addPeriod('10:00', '11:00')
+    ->withMetadata(['patient_id' => 1, 'type' => 'consultation'])
+    ->save();
+
+$appointment2 = Zap::for($doctor)
+    ->named('Patient B - Follow-up')
+    ->appointment()
+    ->from('2025-01-15')
+    ->addPeriod('15:00', '16:00')
+    ->withMetadata(['patient_id' => 2, 'type' => 'follow-up'])
     ->save();
 ```
 </details>
@@ -248,20 +460,31 @@ $appointment = Zap::for($doctor)
 <summary><strong>🏢 Meeting Room Management</strong></summary>
 
 ```php
-// Room maintenance
+// Room availability
+$roomAvailability = Zap::for($room)
+    ->named('Conference Room A - Available')
+    ->availability()
+    ->from('2025-01-01')
+    ->to('2025-12-31')
+    ->addPeriod('08:00', '18:00')
+    ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    ->save();
+
+// Room maintenance (blocked)
 $maintenance = Zap::for($room)
     ->named('Monthly Maintenance')
-    ->from('2025-03-01')
+    ->blocked()
+    ->from('2025-01-01')
     ->addPeriod('18:00', '20:00')
     ->monthly(['day_of_month' => 1])
     ->save();
 
-// Book meeting room
+// Meeting bookings
 $meeting = Zap::for($room)
     ->named('Board Meeting')
+    ->appointment()
     ->from('2025-03-15')
     ->addPeriod('09:00', '11:00')
-    ->noOverlap()
     ->withMetadata([
         'organizer' => 'john@company.com',
         'equipment' => ['projector', 'whiteboard']
@@ -274,21 +497,31 @@ $meeting = Zap::for($room)
 <summary><strong>👨‍💼 Employee Shift Management</strong></summary>
 
 ```php
-// Regular shifts
+// Regular shifts (availability)
 $workSchedule = Zap::for($employee)
     ->named('Regular Shift')
+    ->availability()
     ->from('2025-01-01')->to('2025-12-31')
     ->addPeriod('09:00', '17:00')
     ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
-    ->noWeekends()
     ->save();
 
-// Overtime
-$overtime = Zap::for($employee)
-    ->named('Overtime - Project Deadline')
+// Actual work assignments (appointments)
+$assignment = Zap::for($employee)
+    ->named('Project Alpha')
+    ->appointment()
     ->from('2025-03-15')
-    ->addPeriod('18:00', '22:00')
-    ->maxDuration(240)
+    ->addPeriod('09:00', '12:00')
+    ->withMetadata(['project_id' => 'alpha', 'priority' => 'high'])
+    ->save();
+
+// Time off (blocked)
+$vacation = Zap::for($employee)
+    ->named('Vacation Leave')
+    ->blocked()
+    ->from('2025-06-01')
+    ->to('2025-06-15')
+    ->addPeriod('00:00', '23:59')
     ->save();
 ```
 </details>
@@ -332,16 +565,13 @@ Schema::table('schedules', function (Blueprint $table) {
 });
 ```
 
-### Caching & Eager Loading
+### Eager Loading
 
 ```php
 // Optimize queries
 $schedules = Schedule::with(['periods', 'schedulable'])
     ->forDateRange('2025-03-01', '2025-03-31')
     ->get();
-
-// Cache control
-Cache::tags(['zap', 'schedules'])->flush();
 ```
 
 ---
@@ -356,7 +586,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 git clone https://github.com/laraveljutsu/zap.git
 cd zap
 composer install
-php artisan test
+vendor/bin/pest
 ```
 
 ---

@@ -87,25 +87,28 @@ describe('Conflict Detection', function () {
     it('finds all conflicting schedules', function () {
         $user = createUser();
 
-        // Create multiple existing schedules
+        // Create multiple existing appointment schedules
         $schedule1 = Zap::for($user)
             ->named('Meeting 1')
+            ->appointment()
             ->from('2025-01-01')
             ->addPeriod('09:00', '10:00')
             ->save();
 
         $schedule2 = Zap::for($user)
             ->named('Meeting 2')
+            ->appointment()
             ->from('2025-01-01')
             ->addPeriod('10:30', '11:30')
             ->save();
 
-        // Create a new schedule that overlaps with both
+        // Create a new appointment schedule that overlaps with both
         $newSchedule = new Schedule([
             'schedulable_type' => get_class($user),
             'schedulable_id' => $user->getKey(),
             'start_date' => '2025-01-01',
             'name' => 'Conflicting Meeting',
+            'schedule_type' => Schedule::TYPE_APPOINTMENT,
         ]);
 
         // Add periods that overlap with both existing schedules

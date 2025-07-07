@@ -205,28 +205,37 @@ describe('Comprehensive Slots Feature Tests', function () {
         it('handles overlapping recurring schedules', function () {
             $user = createUser();
 
-            // Daily 9-11 schedule
+            // Create blocked schedule that blocks 9-11 on Mondays
             Zap::for($user)
-                ->from('2025-03-15')
+                ->blocked()
+                ->from('2025-03-17') // Monday
                 ->addPeriod('09:00', '11:00')
-                ->daily()
+                ->weekly(['monday'])
                 ->save();
 
-            // Weekly Saturday 10-12 schedule (overlaps with daily)
+            // Create blocked schedule that blocks 10-12 on Tuesdays (different day to avoid conflict)
             Zap::for($user)
-                ->from('2025-03-15')
+                ->blocked()
+                ->from('2025-03-18') // Tuesday
                 ->addPeriod('10:00', '12:00')
-                ->weekly(['saturday'])
+                ->weekly(['tuesday'])
                 ->save();
 
-            $slots = $user->getAvailableSlots('2025-03-15', '08:00', '13:00', 60); // Saturday
+            // Test Monday - should have first schedule blocking 9-11
+            $mondaySlots = $user->getAvailableSlots('2025-03-17', '08:00', '13:00', 60);
+            expect($mondaySlots[0]['is_available'])->toBeTrue();  // 08:00-09:00
+            expect($mondaySlots[1]['is_available'])->toBeFalse(); // 09:00-10:00 (first schedule)
+            expect($mondaySlots[2]['is_available'])->toBeFalse(); // 10:00-11:00 (first schedule)
+            expect($mondaySlots[3]['is_available'])->toBeTrue();  // 11:00-12:00
+            expect($mondaySlots[4]['is_available'])->toBeTrue();  // 12:00-13:00
 
-            // Should be blocked from 9-12 (union of both schedules)
-            expect($slots[0]['is_available'])->toBeTrue();  // 08:00-09:00
-            expect($slots[1]['is_available'])->toBeFalse(); // 09:00-10:00 (daily)
-            expect($slots[2]['is_available'])->toBeFalse(); // 10:00-11:00 (both)
-            expect($slots[3]['is_available'])->toBeFalse(); // 11:00-12:00 (weekly)
-            expect($slots[4]['is_available'])->toBeTrue();  // 12:00-13:00
+            // Test Tuesday - should have second schedule blocking 10-12
+            $tuesdaySlots = $user->getAvailableSlots('2025-03-18', '08:00', '13:00', 60);
+            expect($tuesdaySlots[0]['is_available'])->toBeTrue();  // 08:00-09:00
+            expect($tuesdaySlots[1]['is_available'])->toBeTrue();  // 09:00-10:00
+            expect($tuesdaySlots[2]['is_available'])->toBeFalse(); // 10:00-11:00 (second schedule)
+            expect($tuesdaySlots[3]['is_available'])->toBeFalse(); // 11:00-12:00 (second schedule)
+            expect($tuesdaySlots[4]['is_available'])->toBeTrue();  // 12:00-13:00
         });
 
     });
@@ -402,6 +411,7 @@ describe('Comprehensive Slots Feature Tests', function () {
             // Create multiple overlapping schedules
             Zap::for($user)
                 ->named('Daily Morning')
+                ->availability()
                 ->from('2025-03-15')
                 ->addPeriod('09:00', '11:00')
                 ->daily()
@@ -409,6 +419,7 @@ describe('Comprehensive Slots Feature Tests', function () {
 
             Zap::for($user)
                 ->named('Weekly Afternoon')
+                ->availability()
                 ->from('2025-03-15')
                 ->addPeriod('14:00', '16:00')
                 ->weekly(['saturday', 'sunday'])
@@ -416,6 +427,7 @@ describe('Comprehensive Slots Feature Tests', function () {
 
             Zap::for($user)
                 ->named('Monthly All Day')
+                ->availability()
                 ->from('2025-04-01')
                 ->addPeriod('00:00', '23:59')
                 ->monthly(['day_of_month' => 1])

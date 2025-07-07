@@ -175,6 +175,67 @@ class ScheduleBuilder
     }
 
     /**
+     * Set schedule as availability type (allows overlaps).
+     */
+    public function availability(): self
+    {
+        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_AVAILABILITY;
+
+        return $this;
+    }
+
+    /**
+     * Set schedule as appointment type (prevents overlaps).
+     */
+    public function appointment(): self
+    {
+        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_APPOINTMENT;
+
+        return $this;
+    }
+
+    /**
+     * Set schedule as blocked type (prevents overlaps).
+     */
+    public function blocked(): self
+    {
+        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_BLOCKED;
+
+        return $this;
+    }
+
+    /**
+     * Set schedule as custom type.
+     */
+    public function custom(): self
+    {
+        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_CUSTOM;
+
+        return $this;
+    }
+
+    /**
+     * Set schedule type explicitly.
+     */
+    public function type(string $type): self
+    {
+        $validTypes = [
+            \Zap\Models\Schedule::TYPE_AVAILABILITY,
+            \Zap\Models\Schedule::TYPE_APPOINTMENT,
+            \Zap\Models\Schedule::TYPE_BLOCKED,
+            \Zap\Models\Schedule::TYPE_CUSTOM,
+        ];
+
+        if (! in_array($type, $validTypes)) {
+            throw new \InvalidArgumentException("Invalid schedule type: {$type}. Valid types are: ".implode(', ', $validTypes));
+        }
+
+        $this->attributes['schedule_type'] = $type;
+
+        return $this;
+    }
+
+    /**
      * Add working hours only rule.
      */
     public function workingHoursOnly(string $start = '09:00', string $end = '17:00'): self
@@ -239,6 +300,11 @@ class ScheduleBuilder
 
         if (empty($this->attributes['start_date'])) {
             throw new \InvalidArgumentException('Start date must be set using from() method');
+        }
+
+        // Set default schedule_type if not specified
+        if (! isset($this->attributes['schedule_type'])) {
+            $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_CUSTOM;
         }
 
         return [

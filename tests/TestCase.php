@@ -47,15 +47,24 @@ abstract class TestCase extends Orchestra
                 'max_periods_per_schedule' => 100,
                 'allow_overlapping_periods' => true,
             ],
-            'rules' => [
+            'default_rules' => [
+                'no_overlap' => [
+                    'enabled' => true,
+                    'applies_to' => ['appointment', 'blocked'],
+                ],
                 'working_hours' => [
                     'enabled' => false,
+                    'start' => '09:00',
+                    'end' => '17:00',
                 ],
                 'max_duration' => [
                     'enabled' => false,
+                    'minutes' => 480,
                 ],
                 'no_weekends' => [
                     'enabled' => false,
+                    'saturday' => true,
+                    'sunday' => true,
                 ],
             ],
             'cache' => [

@@ -332,7 +332,11 @@ return [
     'default_rules' => [
         'no_overlap' => [
             'enabled' => true,
-            'applies_to' => ['appointment', 'blocked'], // Granular control
+            'applies_to' => [
+                // Granular control
+                \Zap\Enums\ScheduleTypes::APPOINTMENT,
+                \Zap\Enums\ScheduleTypes::BLOCKED,
+            ], 
         ],
         'working_hours' => [
             'enabled' => false,

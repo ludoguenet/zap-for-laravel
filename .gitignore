@@ -11,3 +11,4 @@ composer.lock
 .DS_Store
 Thumbs.db
 .cursor/
+.idea/

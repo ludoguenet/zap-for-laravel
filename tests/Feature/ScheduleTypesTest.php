@@ -1,5 +1,6 @@
 <?php
 
+use Zap\Enums\ScheduleTypes;
 use Zap\Exceptions\ScheduleConflictException;
 use Zap\Facades\Zap;
 use Zap\Models\Schedule;
@@ -17,7 +18,7 @@ it('can create availability schedules that allow overlaps', function () {
         ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
         ->save();
 
-    expect($availability->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
+    expect($availability->schedule_type)->toBe(ScheduleTypes::AVAILABILITY);
     expect($availability->allowsOverlaps())->toBeTrue();
     expect($availability->preventsOverlaps())->toBeFalse();
 
@@ -30,7 +31,7 @@ it('can create availability schedules that allow overlaps', function () {
         ->addPeriod('10:00', '11:00')
         ->save();
 
-    expect($appointment->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
+    expect($appointment->schedule_type)->toBe(ScheduleTypes::APPOINTMENT);
     expect($appointment->allowsOverlaps())->toBeFalse();
     expect($appointment->preventsOverlaps())->toBeTrue();
 
@@ -75,7 +76,7 @@ it('can create appointment schedules that prevent overlaps', function () {
         ->addPeriod('11:00', '12:00')
         ->save();
 
-    expect($appointment2->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
+    expect($appointment2->schedule_type)->toBe(ScheduleTypes::APPOINTMENT);
 });
 
 it('can create blocked schedules that prevent overlaps', function () {
@@ -91,7 +92,7 @@ it('can create blocked schedules that prevent overlaps', function () {
         ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
         ->save();
 
-    expect($blocked->schedule_type)->toBe(Schedule::TYPE_BLOCKED);
+    expect($blocked->schedule_type)->toBe(ScheduleTypes::BLOCKED);
     expect($blocked->allowsOverlaps())->toBeFalse();
     expect($blocked->preventsOverlaps())->toBeTrue();
 
@@ -116,7 +117,7 @@ it('can use convenience methods for schedule types', function () {
         ->addPeriod('09:00', '17:00')
         ->save();
 
-    expect($availability->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
+    expect($availability->schedule_type)->toBe(ScheduleTypes::AVAILABILITY);
 
     // Test appointment method - use different date to avoid conflicts
     $appointment = Zap::for($user)
@@ -125,7 +126,7 @@ it('can use convenience methods for schedule types', function () {
         ->addPeriod('10:00', '11:00')
         ->save();
 
-    expect($appointment->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
+    expect($appointment->schedule_type)->toBe(ScheduleTypes::APPOINTMENT);
 
     // Test blocked method - use different date to avoid conflicts
     $blocked = Zap::for($user)
@@ -134,7 +135,7 @@ it('can use convenience methods for schedule types', function () {
         ->addPeriod('12:00', '13:00')
         ->save();
 
-    expect($blocked->schedule_type)->toBe(Schedule::TYPE_BLOCKED);
+    expect($blocked->schedule_type)->toBe(ScheduleTypes::BLOCKED);
 
     // Test custom method - use different date to avoid conflicts
     $custom = Zap::for($user)
@@ -143,7 +144,7 @@ it('can use convenience methods for schedule types', function () {
         ->addPeriod('14:00', '15:00')
         ->save();
 
-    expect($custom->schedule_type)->toBe(Schedule::TYPE_CUSTOM);
+    expect($custom->schedule_type)->toBe(ScheduleTypes::CUSTOM);
 });
 
 it('can use explicit type method', function () {
@@ -155,7 +156,7 @@ it('can use explicit type method', function () {
         ->addPeriod('09:00', '17:00')
         ->save();
 
-    expect($schedule->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
+    expect($schedule->schedule_type)->toBe(ScheduleTypes::AVAILABILITY);
 
     // Test invalid type
     expect(function () use ($user) {
@@ -177,10 +178,10 @@ it('can query schedules by type', function () {
     $custom = Zap::for($user)->custom()->from('2025-01-04')->addPeriod('14:00', '15:00')->save();
 
     // Test individual schedule types
-    expect($availability->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
-    expect($appointment->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
-    expect($blocked->schedule_type)->toBe(Schedule::TYPE_BLOCKED);
-    expect($custom->schedule_type)->toBe(Schedule::TYPE_CUSTOM);
+    expect($availability->schedule_type)->toBe(ScheduleTypes::AVAILABILITY);
+    expect($appointment->schedule_type)->toBe(ScheduleTypes::APPOINTMENT);
+    expect($blocked->schedule_type)->toBe(ScheduleTypes::BLOCKED);
+    expect($custom->schedule_type)->toBe(ScheduleTypes::CUSTOM);
 
     // Test helper methods
     expect($availability->isAvailability())->toBeTrue();
@@ -271,25 +272,32 @@ it('can create complex scheduling scenarios', function () {
         ->save();
 
     // Verify each schedule was created successfully
-    expect($availability)->toBeInstanceOf(Schedule::class);
-    expect($lunchBreak)->toBeInstanceOf(Schedule::class);
-    expect($appointment1)->toBeInstanceOf(Schedule::class);
-    expect($appointment2)->toBeInstanceOf(Schedule::class);
+    expect($availability)->toBeInstanceOf(Schedule::class)
+        ->and($lunchBreak)->toBeInstanceOf(Schedule::class)
+        ->and($appointment1)->toBeInstanceOf(Schedule::class)
+        ->and($appointment2)->toBeInstanceOf(Schedule::class)
+        ->and($availability->schedule_type)->toBe(ScheduleTypes::AVAILABILITY)
+        ->and($lunchBreak->schedule_type)->toBe(ScheduleTypes::BLOCKED)
+        ->and($appointment1->schedule_type)->toBe(ScheduleTypes::APPOINTMENT)
+        ->and($appointment2->schedule_type)->toBe(ScheduleTypes::APPOINTMENT)
+        ->and($doctor->isAvailableAt('2025-01-01', '09:00', '10:00'))->toBeTrue()
+        ->and($doctor->isAvailableAt('2025-01-01', '10:00', '11:00'))->toBeFalse()
+        ->and($doctor->isAvailableAt('2025-01-01', '11:00', '12:00'))->toBeTrue()
+        ->and($doctor->isAvailableAt('2025-01-01', '12:00', '13:00'))->toBeFalse()
+        ->and($doctor->isAvailableAt('2025-01-01', '13:00', '14:00'))->toBeTrue()
+        ->and($doctor->isAvailableAt('2025-01-01', '15:00', '16:00'))->toBeFalse()
+        ->and($doctor->isAvailableAt('2025-01-01', '16:00', '17:00'))->toBeTrue();
 
     // Verify schedule types
-    expect($availability->schedule_type)->toBe(Schedule::TYPE_AVAILABILITY);
-    expect($lunchBreak->schedule_type)->toBe(Schedule::TYPE_BLOCKED);
-    expect($appointment1->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
-    expect($appointment2->schedule_type)->toBe(Schedule::TYPE_APPOINTMENT);
 
     // Test availability
-    expect($doctor->isAvailableAt('2025-01-01', '09:00', '10:00'))->toBeTrue();  // Available (before appointment)
-    expect($doctor->isAvailableAt('2025-01-01', '10:00', '11:00'))->toBeFalse(); // Appointment
-    expect($doctor->isAvailableAt('2025-01-01', '11:00', '12:00'))->toBeTrue();  // Available
-    expect($doctor->isAvailableAt('2025-01-01', '12:00', '13:00'))->toBeFalse(); // Lunch break
-    expect($doctor->isAvailableAt('2025-01-01', '13:00', '14:00'))->toBeTrue();  // Available
-    expect($doctor->isAvailableAt('2025-01-01', '15:00', '16:00'))->toBeFalse(); // Appointment
-    expect($doctor->isAvailableAt('2025-01-01', '16:00', '17:00'))->toBeTrue();  // Available
+    // Available (before appointment)
+    // Appointment
+    // Available
+    // Lunch break
+    // Available
+    // Appointment
+    // Available
 });
 
 it('maintains backward compatibility with existing code', function () {
@@ -301,7 +309,7 @@ it('maintains backward compatibility with existing code', function () {
         ->addPeriod('09:00', '10:00')
         ->save();
 
-    expect($schedule->schedule_type)->toBe(Schedule::TYPE_CUSTOM);
+    expect($schedule->schedule_type)->toBe(ScheduleTypes::CUSTOM);
     expect($schedule->isCustom())->toBeTrue();
 
     // Old way with noOverlap() should still work
@@ -311,6 +319,6 @@ it('maintains backward compatibility with existing code', function () {
         ->noOverlap()
         ->save();
 
-    expect($appointment->schedule_type)->toBe(Schedule::TYPE_CUSTOM);
+    expect($appointment->schedule_type)->toBe(ScheduleTypes::CUSTOM);
     expect($appointment->preventsOverlaps())->toBeFalse(); // Custom type doesn't prevent overlaps by default
 });

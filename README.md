@@ -379,7 +379,7 @@ config(['zap.default_rules.working_hours.enabled' => false]);
 config(['zap.default_rules.no_overlap.enabled' => false]);
 
 // Granular overlap control - only check overlaps for specific schedule types
-config(['zap.default_rules.no_overlap.applies_to' => ['appointment']]);
+config(['zap.default_rules.no_overlap.applies_to' => [\Zap\Enums\ScheduleTypes::APPOINTMENT]]);
 
 // Allow weekend scheduling
 config(['zap.default_rules.no_weekends.enabled' => false]);

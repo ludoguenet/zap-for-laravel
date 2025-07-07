@@ -13,7 +13,11 @@ return [
     'default_rules' => [
         'no_overlap' => [
             'enabled' => true,
-            'applies_to' => ['appointment', 'blocked'], // Which schedule types get this rule automatically
+            'applies_to' => [
+                // Which schedule types get this rule automatically
+                \Zap\Enums\ScheduleTypes::APPOINTMENT,
+                \Zap\Enums\ScheduleTypes::BLOCKED,
+            ],
         ],
         'working_hours' => [
             'enabled' => false,

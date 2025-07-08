@@ -272,7 +272,7 @@ class ValidationService
         }
 
         // Automatically add no_overlap rule for appointment and blocked schedules if enabled
-        $scheduleType = $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM;
+        $scheduleType = $attributes['schedule_type'] ?? \Zap\Enums\ScheduleTypes::CUSTOM;
         $noOverlapConfig = config('zap.default_rules.no_overlap', []);
         $shouldApplyNoOverlap = $this->shouldApplyNoOverlapRule($scheduleType, $noOverlapConfig, $rules);
 
@@ -393,7 +393,7 @@ class ValidationService
     /**
      * Determine if no_overlap rule should be applied.
      */
-    protected function shouldApplyNoOverlapRule(string $scheduleType, array $noOverlapConfig, array $providedRules): bool
+    protected function shouldApplyNoOverlapRule(\Zap\Enums\ScheduleTypes $scheduleType, array $noOverlapConfig, array $providedRules): bool
     {
         // If no_overlap rule was explicitly provided, don't auto-apply
         if (isset($providedRules['no_overlap'])) {
@@ -539,7 +539,7 @@ class ValidationService
             'is_recurring' => $attributes['is_recurring'] ?? false,
             'frequency' => $attributes['frequency'] ?? null,
             'frequency_config' => $attributes['frequency_config'] ?? null,
-            'schedule_type' => $attributes['schedule_type'] ?? \Zap\Models\Schedule::TYPE_CUSTOM,
+            'schedule_type' => $attributes['schedule_type'] ?? \Zap\Enums\ScheduleTypes::CUSTOM,
         ]);
 
         // Create temporary periods
@@ -556,7 +556,7 @@ class ValidationService
         $tempSchedule->setRelation('periods', $tempPeriods);
 
         // For custom schedules with noOverlap rule, check conflicts with all other schedules
-        if ($tempSchedule->schedule_type === \Zap\Models\Schedule::TYPE_CUSTOM) {
+        if ($tempSchedule->schedule_type->is(\Zap\Enums\ScheduleTypes::CUSTOM)) {
             $conflicts = $this->findCustomScheduleConflicts($tempSchedule);
         } else {
             // Use the conflict detection service for typed schedules

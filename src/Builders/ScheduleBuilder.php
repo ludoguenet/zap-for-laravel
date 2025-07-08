@@ -4,6 +4,7 @@ namespace Zap\Builders;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
 use Zap\Services\ScheduleService;
 
@@ -179,7 +180,7 @@ class ScheduleBuilder
      */
     public function availability(): self
     {
-        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_AVAILABILITY;
+        $this->attributes['schedule_type'] = ScheduleTypes::AVAILABILITY;
 
         return $this;
     }
@@ -189,7 +190,7 @@ class ScheduleBuilder
      */
     public function appointment(): self
     {
-        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_APPOINTMENT;
+        $this->attributes['schedule_type'] = ScheduleTypes::APPOINTMENT;
 
         return $this;
     }
@@ -199,7 +200,7 @@ class ScheduleBuilder
      */
     public function blocked(): self
     {
-        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_BLOCKED;
+        $this->attributes['schedule_type'] = ScheduleTypes::BLOCKED;
 
         return $this;
     }
@@ -209,7 +210,7 @@ class ScheduleBuilder
      */
     public function custom(): self
     {
-        $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_CUSTOM;
+        $this->attributes['schedule_type'] = ScheduleTypes::CUSTOM;
 
         return $this;
     }
@@ -219,18 +220,13 @@ class ScheduleBuilder
      */
     public function type(string $type): self
     {
-        $validTypes = [
-            \Zap\Models\Schedule::TYPE_AVAILABILITY,
-            \Zap\Models\Schedule::TYPE_APPOINTMENT,
-            \Zap\Models\Schedule::TYPE_BLOCKED,
-            \Zap\Models\Schedule::TYPE_CUSTOM,
-        ];
-
-        if (! in_array($type, $validTypes)) {
-            throw new \InvalidArgumentException("Invalid schedule type: {$type}. Valid types are: ".implode(', ', $validTypes));
+        try {
+            $scheduleType = ScheduleTypes::from($type);
+        } catch (\ValueError) {
+            throw new \InvalidArgumentException("Invalid schedule type: {$type}. Valid types are: ".implode(', ', ScheduleTypes::values()));
         }
 
-        $this->attributes['schedule_type'] = $type;
+        $this->attributes['schedule_type'] = $scheduleType;
 
         return $this;
     }
@@ -304,7 +300,7 @@ class ScheduleBuilder
 
         // Set default schedule_type if not specified
         if (! isset($this->attributes['schedule_type'])) {
-            $this->attributes['schedule_type'] = \Zap\Models\Schedule::TYPE_CUSTOM;
+            $this->attributes['schedule_type'] = ScheduleTypes::CUSTOM;
         }
 
         return [

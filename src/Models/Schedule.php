@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use LogicException;
 use Zap\Support\DateRange;
+use Zap\Enums\ScheduleTypes;
 
 /**
  * @property int $id
@@ -17,7 +18,7 @@ use Zap\Support\DateRange;
  * @property string|null $description
  * @property string $schedulable_type
  * @property int $schedulable_id
- * @property string $schedule_type
+ * @property ScheduleTypes $schedule_type
  * @property Carbon $start_date
  * @property Carbon|null $end_date
  * @property bool $is_recurring
@@ -34,17 +35,6 @@ use Zap\Support\DateRange;
  */
 class Schedule extends Model
 {
-    /**
-     * Schedule type constants.
-     */
-    public const TYPE_AVAILABILITY = 'availability';
-
-    public const TYPE_APPOINTMENT = 'appointment';
-
-    public const TYPE_BLOCKED = 'blocked';
-
-    public const TYPE_CUSTOM = 'custom';
-
     /**
      * The attributes that are mass assignable.
      */
@@ -67,6 +57,7 @@ class Schedule extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
+        'schedule_type' => ScheduleTypes::class,
         'start_date' => 'date',
         'end_date' => 'date',
         'is_recurring' => 'boolean',
@@ -136,7 +127,7 @@ class Schedule extends Model
      */
     public function scopeAvailability(Builder $query): void
     {
-        $query->where('schedule_type', self::TYPE_AVAILABILITY);
+        $query->where('schedule_type', ScheduleTypes::AVAILABILITY);
     }
 
     /**
@@ -144,7 +135,7 @@ class Schedule extends Model
      */
     public function scopeAppointments(Builder $query): void
     {
-        $query->where('schedule_type', self::TYPE_APPOINTMENT);
+        $query->where('schedule_type', ScheduleTypes::APPOINTMENT);
     }
 
     /**
@@ -152,7 +143,7 @@ class Schedule extends Model
      */
     public function scopeBlocked(Builder $query): void
     {
-        $query->where('schedule_type', self::TYPE_BLOCKED);
+        $query->where('schedule_type', ScheduleTypes::BLOCKED);
     }
 
     /**
@@ -277,7 +268,7 @@ class Schedule extends Model
      */
     public function isAvailability(): bool
     {
-        return $this->schedule_type === self::TYPE_AVAILABILITY;
+        return $this->schedule_type->is(ScheduleTypes::AVAILABILITY);
     }
 
     /**
@@ -285,7 +276,7 @@ class Schedule extends Model
      */
     public function isAppointment(): bool
     {
-        return $this->schedule_type === self::TYPE_APPOINTMENT;
+        return $this->schedule_type->is(ScheduleTypes::APPOINTMENT);
     }
 
     /**
@@ -293,7 +284,7 @@ class Schedule extends Model
      */
     public function isBlocked(): bool
     {
-        return $this->schedule_type === self::TYPE_BLOCKED;
+        return $this->schedule_type->is(ScheduleTypes::BLOCKED);
     }
 
     /**
@@ -301,7 +292,7 @@ class Schedule extends Model
      */
     public function isCustom(): bool
     {
-        return $this->schedule_type === self::TYPE_CUSTOM;
+        return $this->schedule_type->is(ScheduleTypes::CUSTOM);
     }
 
     /**
@@ -309,7 +300,7 @@ class Schedule extends Model
      */
     public function preventsOverlaps(): bool
     {
-        return in_array($this->schedule_type, [self::TYPE_APPOINTMENT, self::TYPE_BLOCKED]);
+        return $this->schedule_type->preventsOverlaps();
     }
 
     /**
@@ -317,17 +308,6 @@ class Schedule extends Model
      */
     public function allowsOverlaps(): bool
     {
-        return $this->schedule_type === self::TYPE_AVAILABILITY ||
-               $this->schedule_type === self::TYPE_CUSTOM ||
-               $this->schedule_type === null; // For backward compatibility
-    }
-
-    /**
-     * Get the schedule type attribute, handling cases where column doesn't exist.
-     */
-    public function getScheduleTypeAttribute($value)
-    {
-        // If the column doesn't exist or is null, default to custom
-        return $value ?? self::TYPE_CUSTOM;
+        return $this->schedule_type->allowsOverlaps();
     }
 }

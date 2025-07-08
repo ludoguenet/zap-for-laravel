@@ -1,5 +1,6 @@
 <?php
 
+use Zap\Enums\ScheduleTypes;
 use Zap\Exceptions\ScheduleConflictException;
 use Zap\Facades\Zap;
 use Zap\Models\Schedule;
@@ -108,7 +109,7 @@ describe('Conflict Detection', function () {
             'schedulable_id' => $user->getKey(),
             'start_date' => '2025-01-01',
             'name' => 'Conflicting Meeting',
-            'schedule_type' => Schedule::TYPE_APPOINTMENT,
+            'schedule_type' => ScheduleTypes::APPOINTMENT,
         ]);
 
         // Add periods that overlap with both existing schedules

@@ -4,6 +4,7 @@ namespace Zap\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Zap\Builders\ScheduleBuilder;
+use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
 use Zap\Services\ConflictDetectionService;
 
@@ -145,10 +146,9 @@ trait HasSchedules
             ->get();
 
         foreach ($schedules as $schedule) {
-            // For backward compatibility, treat null/custom schedules as blocking
-            $shouldBlock = $schedule->schedule_type === null ||
-                          $schedule->schedule_type === \Zap\Models\Schedule::TYPE_CUSTOM ||
-                          $schedule->preventsOverlaps();
+            $shouldBlock = $schedule->schedule_type === null
+                || $schedule->schedule_type->is(ScheduleTypes::CUSTOM)
+                || $schedule->preventsOverlaps();
 
             if ($shouldBlock && $this->scheduleBlocksTime($schedule, $date, $startTime, $endTime)) {
                 return false;

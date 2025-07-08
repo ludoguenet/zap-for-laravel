@@ -4,6 +4,7 @@ namespace Zap\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
 use Zap\Models\SchedulePeriod;
 
@@ -50,8 +51,8 @@ class ConflictDetectionService
     protected function shouldCheckConflict(Schedule $schedule1, Schedule $schedule2): bool
     {
         // Availability schedules never conflict with anything (they allow overlaps)
-        if ($schedule1->schedule_type === Schedule::TYPE_AVAILABILITY ||
-            $schedule2->schedule_type === Schedule::TYPE_AVAILABILITY) {
+        if ($schedule1->schedule_type->is(ScheduleTypes::AVAILABILITY) ||
+            $schedule2->schedule_type->is(ScheduleTypes::AVAILABILITY)) {
             return false;
         }
 
@@ -61,9 +62,9 @@ class ConflictDetectionService
             return false;
         }
 
-        $appliesTo = $noOverlapConfig['applies_to'] ?? ['appointment', 'blocked'];
-        $schedule1ShouldCheck = in_array($schedule1->schedule_type, $appliesTo);
-        $schedule2ShouldCheck = in_array($schedule2->schedule_type, $appliesTo);
+        $appliesTo = $noOverlapConfig['applies_to'] ?? [ScheduleTypes::APPOINTMENT->value, ScheduleTypes::BLOCKED->value];
+        $schedule1ShouldCheck = in_array($schedule1->schedule_type->value, $appliesTo);
+        $schedule2ShouldCheck = in_array($schedule2->schedule_type->value, $appliesTo);
 
         // Both schedules must be of types that should be checked for conflicts
         return $schedule1ShouldCheck && $schedule2ShouldCheck;

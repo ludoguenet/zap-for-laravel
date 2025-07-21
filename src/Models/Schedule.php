@@ -161,11 +161,8 @@ class Schedule extends Model
     {
         $checkDate = \Carbon\Carbon::parse($date);
 
-        $query->where('start_date', '<=', $checkDate)
-            ->where(function ($q) use ($checkDate) {
-                $q->whereNull('end_date')
-                    ->orWhere('end_date', '>=', $checkDate);
-            });
+        $query->where(fn($q) => $q->where('start_date', '=', $checkDate)->whereNull('end_date'))
+            ->orWhere(fn($q) => $q->where('start_date', '<=', $checkDate)->where('end_date', '>=', $checkDate));
     }
 
     /**

@@ -18,6 +18,8 @@
 
 ---
 
+> ⚠️ **Beta Warning**: This package is currently in beta. While we're working hard to ensure stability, it's not recommended for use in production environments yet.
+
 ## ✨ Features
 
 - **🏗️ Eloquent Integration** - User HasMany Schedules with period-based scheduling
@@ -336,7 +338,7 @@ return [
                 // Granular control
                 \Zap\Enums\ScheduleTypes::APPOINTMENT,
                 \Zap\Enums\ScheduleTypes::BLOCKED,
-            ], 
+            ],
         ],
         'working_hours' => [
             'enabled' => false,

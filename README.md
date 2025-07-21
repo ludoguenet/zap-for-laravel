@@ -584,7 +584,7 @@ $schedules = Schedule::with(['periods', 'schedulable'])
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions!
 
 ### Development Setup
 

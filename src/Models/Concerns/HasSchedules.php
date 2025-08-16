@@ -167,18 +167,33 @@ trait HasSchedules
             return false;
         }
 
+        $bufferMinutes = (int) config('zap.conflict_detection.buffer_minutes', 0);
+
         if ($schedule->is_recurring) {
-            return $this->recurringScheduleBlocksTime($schedule, $date, $startTime, $endTime);
+            return $this->recurringScheduleBlocksTime($schedule, $date, $startTime, $endTime, $bufferMinutes);
         }
 
-        // For non-recurring schedules, check stored periods
-        return $schedule->periods()->overlapping($date, $startTime, $endTime)->exists();
+        // For non-recurring schedules: if no buffer, keep using the optimized overlapping scope
+        if ($bufferMinutes <= 0) {
+            return $schedule->periods()->overlapping($date, $startTime, $endTime)->exists();
+        }
+
+        // With buffer, we need to evaluate in PHP
+        $periods = $schedule->periods()->forDate($date)->get();
+
+        foreach ($periods as $period) {
+            if ($this->timePeriodsOverlapWithBuffer($period->start_time, $period->end_time, $startTime, $endTime, $bufferMinutes)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Check if a recurring schedule blocks the given time period.
      */
-    protected function recurringScheduleBlocksTime(\Zap\Models\Schedule $schedule, string $date, string $startTime, string $endTime): bool
+    protected function recurringScheduleBlocksTime(\Zap\Models\Schedule $schedule, string $date, string $startTime, string $endTime, int $bufferMinutes = 0): bool
     {
         $checkDate = \Carbon\Carbon::parse($date);
 
@@ -191,7 +206,7 @@ trait HasSchedules
         $basePeriods = $schedule->periods;
 
         foreach ($basePeriods as $basePeriod) {
-            if ($this->timePeriodsOverlap($basePeriod->start_time, $basePeriod->end_time, $startTime, $endTime)) {
+            if ($this->timePeriodsOverlapWithBuffer($basePeriod->start_time, $basePeriod->end_time, $startTime, $endTime, $bufferMinutes)) {
                 return true;
             }
         }
@@ -244,6 +259,25 @@ trait HasSchedules
     protected function timePeriodsOverlap(string $start1, string $end1, string $start2, string $end2): bool
     {
         return $start1 < $end2 && $end1 > $start2;
+    }
+
+    /**
+     * Check if two time periods overlap, applying an optional symmetric buffer (in minutes)
+     * around the first period.
+     */
+    protected function timePeriodsOverlapWithBuffer(string $start1, string $end1, string $start2, string $end2, int $bufferMinutes = 0): bool
+    {
+        if ($bufferMinutes <= 0) {
+            return $this->timePeriodsOverlap($start1, $end1, $start2, $end2);
+        }
+
+        $baseDate = '2024-01-01';
+        $s1 = \Carbon\Carbon::parse($baseDate.' '.$start1)->subMinutes($bufferMinutes);
+        $e1 = \Carbon\Carbon::parse($baseDate.' '.$end1)->addMinutes($bufferMinutes);
+        $s2 = \Carbon\Carbon::parse($baseDate.' '.$start2);
+        $e2 = \Carbon\Carbon::parse($baseDate.' '.$end2);
+
+        return $s1->lt($e2) && $e1->gt($s2);
     }
 
     /**

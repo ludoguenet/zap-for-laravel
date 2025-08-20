@@ -10,7 +10,7 @@
 [![Laravel Version](https://img.shields.io/badge/Laravel-11.0+-FF2D20?style=flat&logo=laravel)](https://laravel.com)
 [![License](http://poser.pugx.org/laraveljutsu/zap/license)](https://packagist.org/packages/laraveljutsu/zap)
 
-*A flexible, performant, and developer-friendly schedule management system with deep Laravel integration.*
+_A flexible, performant, and developer-friendly schedule management system with deep Laravel integration._
 
 [Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [Schedule Types](#-schedule-types) • [Documentation](#-advanced-usage) • [Contributing](#-contributing)
 
@@ -142,6 +142,7 @@ $schedule = Zap::for($user)
 Laravel Zap supports four distinct schedule types to handle complex scheduling scenarios:
 
 ### 1. **Availability Schedules**
+
 Working hours or open time slots that **allow overlaps**. Perfect for defining when someone is available.
 
 ```php
@@ -159,6 +160,7 @@ $availability = Zap::for($doctor)
 ```
 
 ### 2. **Appointment Schedules**
+
 Actual bookings that **prevent overlaps**. These are concrete appointments scheduled within availability windows.
 
 ```php
@@ -178,6 +180,7 @@ $appointment = Zap::for($doctor)
 ```
 
 ### 3. **Blocked Schedules**
+
 Unavailable time periods that **prevent overlaps**. Used for lunch breaks, holidays, or maintenance.
 
 ```php
@@ -194,6 +197,7 @@ $lunchBreak = Zap::for($doctor)
 ```
 
 ### 4. **Custom Schedules**
+
 Default type for backward compatibility. Behavior depends on explicit rules.
 
 ```php
@@ -414,6 +418,120 @@ $schedule = Zap::for($user)
 
 ---
 
+## 🤖 IA Rules
+
+### 📌 Contexte
+
+Projet : **Système de prise de rendez-vous pour {insert your choose: veto, medical, ..}**  
+Librairie : **Zap (Laravel) (https://github.com/ludoguenet/laravel-zap)**
+
+### ✅ Objectif
+
+Toujours **privilégier les helpers et patterns fournis par Zap** plutôt que de coder des solutions maison.
+
+---
+
+### 🛑 DO / DON'T
+
+#### Validation & conflits
+
+- ❌ **N'écris pas** tes propres vérifications de chevauchements avec `whereBetween()`.
+- ✅ **Utilise** `noOverlap()` ou `findConflicts()`.
+
+#### Disponibilités
+
+- ❌ **N'implémente pas** manuellement la logique de disponibilité.
+- ✅ **Utilise** `isAvailableAt()`, `getAvailableSlots()`, `getNextAvailableSlot()`.
+
+#### Querying
+
+- ❌ **N'utilise pas** `whereBetween()` sur tes plannings.
+- ✅ **Utilise** `forDate()` et `forDateRange()`.
+
+#### Typage
+
+- ❌ **Ne stocke pas** les types d'événements en dur (`type = "blocked"`).
+- ✅ **Utilise** les helpers : `appointment()`, `availability()`, `blocked()`.
+
+#### Règles métier
+
+- ❌ **Ne valide pas** toi-même les heures/durées (`if ($start < 9h ...)`).
+- ✅ **Utilise** `workingHoursOnly()`, `maxDuration()`.
+
+- ❌ **Ne duplique pas** les règles dans chaque contrôleur.
+- ✅ **Centralise-les** dans `config/zap.php`.
+
+#### Récurrence
+
+- ❌ **N'écris pas** ton moteur de récurrence.
+- ✅ **Utilise** `weekly()`, `monthly()`, `daily()`.
+
+#### Architecture
+
+- ❌ **Ne surcharge pas** tes contrôleurs avec de la logique.
+- ✅ **Mets** `use HasSchedules` sur tes modèles planifiables.
+
+#### Événements
+
+- ❌ **Ne déclenche pas** de side-effects après `save()`.
+- ✅ **Écoute** `ScheduleCreated`, `ScheduleUpdated`, `ScheduleDeleted`.
+
+---
+
+### 📊 Tableau des bonnes pratiques
+
+| ❌ Mauvaise pratique                         | ✅ Bonne pratique                           | Exemple                                                                                 |
+| -------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Vérifier chevauchement avec `whereBetween()` | Utiliser `noOverlap()` ou `findConflicts()` | `Zap::for($doctor)->appointment()->noOverlap()->save();`                                |
+| Vérif dispo via requête custom               | `isAvailableAt()`                           | `$doctor->isAvailableAt('2025-08-20','09:00','10:00');`                                 |
+| Requêtes manuelles sur période               | `forDateRange()`                            | `$doctor->schedulesForDateRange('2025-08-20','2025-08-25');`                            |
+| Stocker `type="blocked"`                     | `blocked()`                                 | `Zap::for($doctor)->blocked()->from('2025-08-20')->addPeriod('12:00','14:00')->save();` |
+| If maison pour durée                         | `maxDuration(60)`                           | `->appointment()->maxDuration(60)`                                                      |
+| Recréer moteur récurrent                     | `weekly()`, `monthly()`                     | `->weekly(['monday','wednesday'])`                                                      |
+| Vérif heures par if                          | `workingHoursOnly()`                        | `->appointment()->workingHoursOnly('09:00','18:00')`                                    |
+| Notif après save()                           | `ScheduleCreated` listener                  | `class NotifyPatient { public function handle(ScheduleCreated $event) {...} }`          |
+
+---
+
+### 🚀 Patterns recommandés
+
+- **Check disponibilité avant insertion**  
+  `if ($doctor->isAvailableAt(...)) Zap::for($doctor)->appointment()->save();`
+
+- **Blocage congés**  
+  `Zap::for($doctor)->blocked()->from(...)->addPeriod(...)->save();`
+
+- **Agenda complet patient/docteur**  
+  `schedulesForDateRange()` + `groupBy('date')`
+
+- **Urgence médicale**  
+  `findConflicts()` → si conflit, proposer `getNextAvailableSlot()`
+
+---
+
+### 🔄 Refactorisation / Migration
+
+- **Migrer progressivement** : ne pas réécrire tout, remplacer cas par cas.
+- **Transformer la DB** :
+  - Table `appointments` → `schedules + schedule_periods`
+  - Champs annexes → `metadata JSON`
+- **Remplacer le code maison** :
+  - `whereBetween()` → `forDateRange()`
+  - Validation manuelle → `workingHoursOnly()`, `noOverlap()`
+  - Récurrence foreach → `weekly()`
+  - Notification après `save()` → Listener `ScheduleCreated`.
+
+---
+
+### ✅ Règle générale
+
+> **Toujours préférer un helper Zap officiel à une logique maison.**  
+> Zap = Source de vérité métier (validation, disponibilité, conflits, récurrence, querying).  
+> Contrôleurs = Orchestration simple.  
+> Règles globales = `config/zap.php`.
+
+---
+
 ## 🎯 Use Cases
 
 <details>
@@ -458,6 +576,7 @@ $appointment2 = Zap::for($doctor)
     ->withMetadata(['patient_id' => 2, 'type' => 'follow-up'])
     ->save();
 ```
+
 </details>
 
 <details>
@@ -495,6 +614,7 @@ $meeting = Zap::for($room)
     ])
     ->save();
 ```
+
 </details>
 
 <details>
@@ -528,6 +648,7 @@ $vacation = Zap::for($employee)
     ->addPeriod('00:00', '23:59')
     ->save();
 ```
+
 </details>
 
 ---

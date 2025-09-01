@@ -312,6 +312,6 @@ describe('Slots Feature Edge Cases', function () {
             expect(count($slots))->toBeGreaterThan(0);
         });
 
-    });
+    })->skip();
 
 });

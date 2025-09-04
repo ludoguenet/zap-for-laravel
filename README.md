@@ -2,8 +2,6 @@
 
 <img src="art/logo.png" alt="Zap Logo" width="200">
 
-# ⚡ Laravel Zap
-
 **The missing schedule management for Laravel**
 
 [![PHP Version Require](http://poser.pugx.org/laraveljutsu/zap/require/php)](https://packagist.org/packages/laraveljutsu/zap)

@@ -4,8 +4,10 @@ namespace Zap\Models;
 
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use PDO;
 
 /**
  * @property int $id
@@ -142,10 +144,24 @@ class SchedulePeriod extends Model
      */
     public function scopeOverlapping(\Illuminate\Database\Eloquent\Builder $query, string $date, string $startTime, string $endTime, ?CarbonInterface $endDate = null): \Illuminate\Database\Eloquent\Builder
     {
-        return $query
-            ->when(is_null($endDate), fn ($query) => $query->whereDate('date', $date))
-            ->where('start_time', '<', $endTime)
-            ->where('end_time', '>', $startTime);
+        // Normalize input times to HH:MM format
+        $startTime = str_pad($startTime, 5, '0', STR_PAD_LEFT);
+        $endTime = str_pad($endTime, 5, '0', STR_PAD_LEFT);
+
+        // Apply date filter
+        $query->when(is_null($endDate), fn ($q) => $q->whereDate('date', $date));
+
+        // Apply time overlap logic based on database driver
+
+        /** @var Connection $connection */
+        $connection = $query->getConnection();
+        $driver = $connection->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        if ($driver === 'sqlite') {
+            return $this->applySqliteTimeOverlap($query, $startTime, $endTime);
+        }
+
+        return $this->applyStandardTimeOverlap($query, $startTime, $endTime);
     }
 
     /**
@@ -159,5 +175,25 @@ class SchedulePeriod extends Model
             $this->start_time,
             $this->end_time
         );
+    }
+
+    /**
+     * Apply SQLite-specific time overlap conditions.
+     */
+    private function applySqliteTimeOverlap($query, string $startTime, string $endTime)
+    {
+        return $query
+            ->whereRaw('CASE WHEN LENGTH(start_time) = 4 THEN "0" || start_time ELSE start_time END < ?', [$endTime])
+            ->whereRaw('CASE WHEN LENGTH(end_time) = 4 THEN "0" || end_time ELSE end_time END > ?', [$startTime]);
+    }
+
+    /**
+     * Apply standard SQL time overlap conditions (MySQL/PostgreSQL).
+     */
+    private function applyStandardTimeOverlap($query, string $startTime, string $endTime)
+    {
+        return $query
+            ->whereRaw('LPAD(start_time, 5, "0") < ?', [$endTime])
+            ->whereRaw('LPAD(end_time, 5, "0") > ?', [$startTime]);
     }
 }

@@ -27,7 +27,7 @@ return [
         ],
         'max_duration' => [
             'enabled' => false,
-            'minutes' => 480, // 8 hours
+            'minutes' => 480, // Maximum period duration in minutes if enabled
         ],
         'no_weekends' => [
             'enabled' => false,
@@ -68,22 +68,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Cache Settings
-    |--------------------------------------------------------------------------
-    |
-    | Configure caching for schedule queries and conflict detection.
-    |
-    */
-    'cache' => [
-        'enabled' => true,
-        'ttl' => 3600, // 1 hour in seconds
-        'prefix' => 'zap_schedule_',
-        'tags' => ['zap', 'schedules'],
-        'store' => null, // Uses default cache store if null
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Time Slots Configuration
     |--------------------------------------------------------------------------
     |
@@ -113,7 +97,6 @@ return [
         'require_future_dates' => true, // Schedules must be in the future
         'max_date_range' => 365, // Maximum days between start and end date
         'min_period_duration' => 15, // Minimum period duration in minutes
-        'max_period_duration' => 480, // Maximum period duration in minutes
         'max_periods_per_schedule' => 50, // Maximum periods per schedule
         'allow_overlapping_periods' => false, // Allow periods to overlap within same schedule
     ],

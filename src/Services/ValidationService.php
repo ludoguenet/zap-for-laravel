@@ -25,7 +25,7 @@ class ValidationService
         }
 
         // Period validation
-        $periodErrors = $this->validatePeriods($periods, $rules);
+        $periodErrors = $this->validatePeriods($periods);
         if (! empty($periodErrors)) {
             $errors = array_merge($errors, $periodErrors);
         }
@@ -91,7 +91,7 @@ class ValidationService
     /**
      * Validate schedule periods.
      */
-    protected function validatePeriods(array $periods, array $rules): array
+    protected function validatePeriods(array $periods): array
     {
         $errors = [];
 
@@ -107,7 +107,7 @@ class ValidationService
         }
 
         foreach ($periods as $index => $period) {
-            $periodErrors = $this->validateSinglePeriod($period, $index, $rules);
+            $periodErrors = $this->validateSinglePeriod($period, $index);
             if (! empty($periodErrors)) {
                 $errors = array_merge($errors, $periodErrors);
             }
@@ -127,7 +127,7 @@ class ValidationService
     /**
      * Validate a single period.
      */
-    protected function validateSinglePeriod(array $period, int $index, array $rules): array
+    protected function validateSinglePeriod(array $period, int $index): array
     {
         $errors = [];
         $prefix = "periods.{$index}";
@@ -163,7 +163,12 @@ class ValidationService
             // Duration validation
             $duration = $start->diffInMinutes($end);
             $minDuration = config('zap.validation.min_period_duration', 15);
-            $maxDuration = data_get($rules, 'max_duration', config('zap.validation.max_period_duration'));
+
+            $maxDuration = 1440;
+
+            if (config('zap.default_rules.max_duration.enabled')) {
+                $maxDuration = config('zap.default_rules.max_duration.minutes', 480);
+            }
 
             if ($duration < $minDuration) {
                 $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";

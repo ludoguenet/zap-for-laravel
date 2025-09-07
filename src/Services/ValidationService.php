@@ -402,7 +402,7 @@ class ValidationService
     protected function shouldApplyNoOverlapRule(\Zap\Enums\ScheduleTypes $scheduleType, array $noOverlapConfig, array $providedRules): bool
     {
         // If no_overlap rule was explicitly provided, don't auto-apply
-        if (isset($providedRules['no_overlap'])) {
+        if (isset($providedRules['no_overlap']['enabled']) && $providedRules['no_overlap']['enabled'] === false) {
             return false;
         }
 

@@ -26,6 +26,28 @@ describe('Conflict Detection', function () {
         })->toThrow(ScheduleConflictException::class);
     });
 
+    it('detects overlapping time periods on same date for not custom schedule', function () {
+        $user = createUser();
+        config(['zap.default_rules.no_overlap.applies_to' => [\Zap\Enums\ScheduleTypes::APPOINTMENT]]);
+
+        // Create first schedule
+        Zap::for($user)
+            ->from('2025-01-01')
+            ->addPeriod('09:00', '11:00')
+            ->appointment()
+            ->save();
+
+        // This should conflict
+        expect(function () use ($user) {
+            Zap::for($user)
+                ->from('2025-01-01')
+                ->addPeriod('10:00', '12:00') // Overlaps with 09:00-11:00
+                ->appointment()
+                ->noOverlap()
+                ->save();
+        })->toThrow(ScheduleConflictException::class);
+    });
+
     it('allows non-overlapping periods on same date', function () {
         $user = createUser();
 

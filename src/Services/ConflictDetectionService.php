@@ -63,6 +63,11 @@ class ConflictDetectionService
         }
 
         $appliesTo = $noOverlapConfig['applies_to'] ?? [ScheduleTypes::APPOINTMENT->value, ScheduleTypes::BLOCKED->value];
+        // We need to convert the schedule types to strings, because the documentation allows both strings and ScheduleTypes
+        $appliesTo = array_map(
+            fn (string|ScheduleTypes $type) => $type instanceof ScheduleTypes ? $type->value : $type,
+            $appliesTo
+        );
         $schedule1ShouldCheck = in_array($schedule1->schedule_type->value, $appliesTo);
         $schedule2ShouldCheck = in_array($schedule2->schedule_type->value, $appliesTo);
 

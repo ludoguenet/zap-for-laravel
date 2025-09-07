@@ -61,6 +61,14 @@ class ScheduleBuilder
     }
 
     /**
+     * Alias of from()
+     */
+    public function on(Carbon|string $startDate): self
+    {
+        return $this->from($startDate);
+    }
+
+    /**
      * Set the end date.
      */
     public function to(Carbon|string|null $endDate): self

@@ -3,6 +3,7 @@
 namespace Zap\Models;
 
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -139,9 +140,10 @@ class SchedulePeriod extends Model
     /**
      * Scope a query to find overlapping periods.
      */
-    public function scopeOverlapping(\Illuminate\Database\Eloquent\Builder $query, string $date, string $startTime, string $endTime): \Illuminate\Database\Eloquent\Builder
+    public function scopeOverlapping(\Illuminate\Database\Eloquent\Builder $query, string $date, string $startTime, string $endTime, ?CarbonInterface $endDate = null): \Illuminate\Database\Eloquent\Builder
     {
-        return $query->whereDate('date', $date)
+        return $query
+            ->when(is_null($endDate), fn ($query) => $query->whereDate('date', $date))
             ->where('start_time', '<', $endTime)
             ->where('end_time', '>', $startTime);
     }

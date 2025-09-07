@@ -175,7 +175,7 @@ trait HasSchedules
 
         // For non-recurring schedules: if no buffer, keep using the optimized overlapping scope
         if ($bufferMinutes <= 0) {
-            return $schedule->periods()->overlapping($date, $startTime, $endTime)->exists();
+            return $schedule->periods()->overlapping($date, $startTime, $endTime, $schedule->end_date ?? null)->exists();
         }
 
         // With buffer, we need to evaluate in PHP

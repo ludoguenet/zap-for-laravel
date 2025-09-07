@@ -25,7 +25,7 @@ class ValidationService
         }
 
         // Period validation
-        $periodErrors = $this->validatePeriods($periods);
+        $periodErrors = $this->validatePeriods($periods, $rules);
         if (! empty($periodErrors)) {
             $errors = array_merge($errors, $periodErrors);
         }
@@ -91,7 +91,7 @@ class ValidationService
     /**
      * Validate schedule periods.
      */
-    protected function validatePeriods(array $periods): array
+    protected function validatePeriods(array $periods, array $rules): array
     {
         $errors = [];
 
@@ -107,7 +107,7 @@ class ValidationService
         }
 
         foreach ($periods as $index => $period) {
-            $periodErrors = $this->validateSinglePeriod($period, $index);
+            $periodErrors = $this->validateSinglePeriod($period, $index, $rules);
             if (! empty($periodErrors)) {
                 $errors = array_merge($errors, $periodErrors);
             }
@@ -127,7 +127,7 @@ class ValidationService
     /**
      * Validate a single period.
      */
-    protected function validateSinglePeriod(array $period, int $index): array
+    protected function validateSinglePeriod(array $period, int $index, array $rules): array
     {
         $errors = [];
         $prefix = "periods.{$index}";
@@ -163,7 +163,7 @@ class ValidationService
             // Duration validation
             $duration = $start->diffInMinutes($end);
             $minDuration = config('zap.validation.min_period_duration', 15);
-            $maxDuration = config('zap.validation.max_period_duration', 480);
+            $maxDuration = data_get($rules, 'max_duration', config('zap.validation.max_period_duration'));
 
             if ($duration < $minDuration) {
                 $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";
@@ -247,6 +247,7 @@ class ValidationService
             }
 
             $ruleErrors = $this->validateRule($ruleName, $ruleConfig, $schedulable, $attributes, $periods);
+
             if (! empty($ruleErrors)) {
                 $errors = array_merge($errors, $ruleErrors);
             }

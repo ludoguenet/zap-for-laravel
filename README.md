@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="art/logo.png" alt="Zap Logo" width="200">
+<img src="art/logo.png?v=2" alt="Zap Logo" width="200">
 
 **The missing calendar management for Laravel**
 

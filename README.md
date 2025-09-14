@@ -381,14 +381,14 @@ vendor/bin/pest
 Zap for Laravel is open-source software licensed under the [MIT License](LICENSE).
 
 ## 🔒 Security
-
+git config pull.rebase false
 If you discover security vulnerabilities, please email **ludo@epekta.com** instead of using the issue tracker.
 
 ---
 
 <div align="center">
 
-**⚡ Made with ❤️ by [Laravel Jutsu](https://laraveljutsu.net) for the Laravel community ⚡**
+**⚡ Made with ❤️ by [Laravel Jutsu](https://www.youtube.com/@LaravelJutsu) for the Laravel community ⚡**
 
 [Website](https://ludovicguenet.dev) • [Documentation](https://zap-for-laravel.com) • [Support](mailto:ludo@epekta.com)
 

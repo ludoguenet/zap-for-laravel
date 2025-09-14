@@ -2,14 +2,14 @@
 
 <img src="art/logo.png" alt="Zap Logo" width="200">
 
-**The missing schedule management for Laravel**
+**The missing calendar management for Laravel**
 
 [![PHP Version Require](http://poser.pugx.org/laraveljutsu/zap/require/php)](https://packagist.org/packages/laraveljutsu/zap)
 [![Laravel Version](https://img.shields.io/badge/Laravel-11.0+-FF2D20?style=flat&logo=laravel)](https://laravel.com)
 [![License](http://poser.pugx.org/laraveljutsu/zap/license)](https://packagist.org/packages/laraveljutsu/zap)
 [![Total Downloads](http://poser.pugx.org/laraveljutsu/zap/downloads)](https://packagist.org/packages/laraveljutsu/zap)
 
-*A flexible, performant, and developer-friendly schedule management system with deep Laravel integration.*
+*A flexible, performant, and developer-friendly calendar management system with deep Laravel integration.*
 
 [Installation](#installation) • [Quick Start](#quick-start) • [Schedule Types](#schedule-types) • [Features](#features) • [Documentation](#advanced-usage) • [Contributing](#contributing)
 

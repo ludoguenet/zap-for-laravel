@@ -146,9 +146,7 @@ trait HasSchedules
             ->get();
 
         foreach ($schedules as $schedule) {
-            $shouldBlock = $schedule->schedule_type === null
-                || $schedule->schedule_type->is(ScheduleTypes::CUSTOM)
-                || $schedule->preventsOverlaps();
+            $shouldBlock = $schedule->schedule_type->is(ScheduleTypes::CUSTOM) || $schedule->preventsOverlaps();
 
             if ($shouldBlock && $this->scheduleBlocksTime($schedule, $date, $startTime, $endTime)) {
                 return false;

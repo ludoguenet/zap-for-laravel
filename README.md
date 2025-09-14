@@ -99,7 +99,7 @@ $schedule = Zap::for($user)
 
 ## 🎯 Schedule Types
 
-Laravel Zap supports four distinct schedule types for complex scheduling scenarios:
+Zap for Laravel supports four distinct schedule types for complex scheduling scenarios:
 
 ### 1. **Availability** - Working Hours
 Define when someone/something is available. **Allows overlaps**.
@@ -378,7 +378,7 @@ vendor/bin/pest
 
 ## 📜 License
 
-Laravel Zap is open-source software licensed under the [MIT License](LICENSE).
+Zap for Laravel is open-source software licensed under the [MIT License](LICENSE).
 
 ## 🔒 Security
 
@@ -390,6 +390,6 @@ If you discover security vulnerabilities, please email **ludo@epekta.com** inste
 
 **⚡ Made with ❤️ by [Laravel Jutsu](https://laraveljutsu.net) for the Laravel community ⚡**
 
-[Website](https://laraveljutsu.net) • [Documentation](https://laraveljutsu.net/blog/laravel-zap) • [Support](mailto:ludo@epekta.com)
+[Website](https://ludovicguenet.dev) • [Documentation](https://zap-for-laravel.com) • [Support](mailto:ludo@epekta.com)
 
 </div>

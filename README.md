@@ -202,6 +202,15 @@ $slots = $user->getAvailableSlots(
     slotDuration: 60
 );
 
+// Get available slots with buffer time
+$slotsWithBuffer = $user->getAvailableSlots(
+    date: '2025-03-15',
+    dayStart: '09:00',
+    dayEnd: '17:00',
+    slotDuration: 60,
+    bufferMinutes: 15 // 15 minutes between appointments
+);
+
 // Find next available slot
 $nextSlot = $user->getNextAvailableSlot(
     afterDate: '2025-03-15',
@@ -209,6 +218,33 @@ $nextSlot = $user->getNextAvailableSlot(
     dayStart: '09:00',
     dayEnd: '17:00'
 );
+
+// Find next available slot with buffer time
+$nextSlotWithBuffer = $user->getNextAvailableSlot(
+    afterDate: '2025-03-15',
+    duration: 120,
+    dayStart: '09:00',
+    dayEnd: '17:00',
+    bufferMinutes: 10
+);
+```
+
+### Buffer Time Configuration
+```php
+// Configure global buffer time in config/zap.php
+'time_slots' => [
+    'buffer_minutes' => 10, // 10 minutes between all appointments
+    // ... other settings
+],
+
+// Use global buffer time (falls back to config)
+$slots = $user->getAvailableSlots('2025-03-15', '09:00', '17:00', 60);
+
+// Override with specific buffer time
+$slots = $user->getAvailableSlots('2025-03-15', '09:00', '17:00', 60, 15);
+
+// Explicitly disable buffer (override config)
+$slots = $user->getAvailableSlots('2025-03-15', '09:00', '17:00', 60, 0);
 ```
 
 ### Conflict Management

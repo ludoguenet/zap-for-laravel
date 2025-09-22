@@ -203,6 +203,22 @@ $isAvailable = $doctor->isAvailableAt('2025-01-01', '10:00', '11:00');
 // This will return true if the time is within availability windows
 ```
 
+## Buffer Time Support
+
+Buffer time can be added to availability slots to create gaps between appointments:
+
+```php
+// Get availability slots with 15-minute buffer between appointments
+$slots = $doctor->getAvailableSlots('2025-01-01', '09:00', '17:00', 60, 15);
+
+// Configure global buffer time in config/zap.php
+'time_slots' => [
+    'buffer_minutes' => 10, // Default buffer for all slots
+],
+```
+
+See [Buffer Time Documentation](buffer-time.md) for detailed usage.
+
 ## Conflict Detection
 
 Conflict detection now respects schedule types:

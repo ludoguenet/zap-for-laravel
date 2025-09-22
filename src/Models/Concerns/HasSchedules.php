@@ -285,12 +285,19 @@ trait HasSchedules
         string $date,
         string $dayStart = '09:00',
         string $dayEnd = '17:00',
-        int $slotDuration = 60
+        int $slotDuration = 60,
+        ?int $bufferMinutes = null
     ): array {
         // Validate inputs to prevent infinite loops
         if ($slotDuration <= 0) {
             return [];
         }
+
+        if ($bufferMinutes === null) {
+            $bufferMinutes = (int) config('zap.time_slots.buffer_minutes', 0);
+        }
+
+        $bufferMinutes = max(0, $bufferMinutes);
 
         $slots = [];
         $currentTime = \Carbon\Carbon::parse($date.' '.$dayStart);
@@ -304,6 +311,8 @@ trait HasSchedules
         // Safety counter to prevent infinite loops (max 1440 minutes in a day / min slot duration)
         $maxIterations = 1440;
         $iterations = 0;
+
+        $slotInterval = $slotDuration + $bufferMinutes;
 
         while ($currentTime->lessThan($endTime) && $iterations < $maxIterations) {
             $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
@@ -319,10 +328,11 @@ trait HasSchedules
                     'start_time' => $currentTime->format('H:i'),
                     'end_time' => $slotEnd->format('H:i'),
                     'is_available' => $isAvailable,
+                    'buffer_minutes' => $bufferMinutes,
                 ];
             }
 
-            $currentTime->addMinutes($slotDuration);
+            $currentTime->addMinutes($slotInterval);
             $iterations++;
         }
 
@@ -336,7 +346,8 @@ trait HasSchedules
         ?string $afterDate = null,
         int $duration = 60,
         string $dayStart = '09:00',
-        string $dayEnd = '17:00'
+        string $dayEnd = '17:00',
+        ?int $bufferMinutes = null
     ): ?array {
         // Validate inputs
         if ($duration <= 0) {
@@ -349,7 +360,7 @@ trait HasSchedules
         // Check up to 30 days in the future
         for ($i = 0; $i < 30; $i++) {
             $dateString = $checkDate->format('Y-m-d');
-            $slots = $this->getAvailableSlots($dateString, $dayStart, $dayEnd, $duration);
+            $slots = $this->getAvailableSlots($dateString, $dayStart, $dayEnd, $duration, $bufferMinutes);
 
             foreach ($slots as $slot) {
                 if ($slot['is_available']) {

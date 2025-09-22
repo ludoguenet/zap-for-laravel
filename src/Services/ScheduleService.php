@@ -146,10 +146,11 @@ class ScheduleService
         string $date,
         string $startTime = '09:00',
         string $endTime = '17:00',
-        int $slotDuration = 60
+        int $slotDuration = 60,
+        ?int $bufferMinutes = null
     ): array {
         if (method_exists($schedulable, 'getAvailableSlots')) {
-            return $schedulable->getAvailableSlots($date, $startTime, $endTime, $slotDuration);
+            return $schedulable->getAvailableSlots($date, $startTime, $endTime, $slotDuration, $bufferMinutes);
         }
 
         return [];

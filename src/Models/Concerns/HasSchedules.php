@@ -285,12 +285,19 @@ trait HasSchedules
         string $date,
         string $dayStart = '09:00',
         string $dayEnd = '17:00',
-        int $slotDuration = 60
+        int $slotDuration = 60,
+        ?int $bufferMinutes = null
     ): array {
         // Validate inputs to prevent infinite loops
         if ($slotDuration <= 0) {
             return [];
         }
+
+        if ($bufferMinutes === null) {
+            $bufferMinutes = (int) config('zap.time_slots.buffer_minutes', 0);
+        }
+
+        $bufferMinutes = max(0, $bufferMinutes);
 
         $slots = [];
         $currentTime = \Carbon\Carbon::parse($date.' '.$dayStart);
@@ -304,6 +311,8 @@ trait HasSchedules
         // Safety counter to prevent infinite loops (max 1440 minutes in a day / min slot duration)
         $maxIterations = 1440;
         $iterations = 0;
+
+        $slotInterval = $slotDuration + $bufferMinutes;
 
         while ($currentTime->lessThan($endTime) && $iterations < $maxIterations) {
             $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
@@ -319,14 +328,188 @@ trait HasSchedules
                     'start_time' => $currentTime->format('H:i'),
                     'end_time' => $slotEnd->format('H:i'),
                     'is_available' => $isAvailable,
+                    'buffer_minutes' => $bufferMinutes,
                 ];
             }
 
-            $currentTime->addMinutes($slotDuration);
+            $currentTime->addMinutes($slotInterval);
             $iterations++;
         }
 
         return $slots;
+    }
+
+    /**
+     * Get bookable time slots for a specific date that intersect with availability schedules.
+     */
+    public function getBookableSlots(
+        string $date,
+        int $slotDuration = 60,
+        ?int $bufferMinutes = null
+    ): array {
+        if ($slotDuration <= 0) {
+            return [];
+        }
+
+        if ($bufferMinutes === null) {
+            $bufferMinutes = (int) config('zap.time_slots.buffer_minutes', 0);
+        }
+
+        $bufferMinutes = max(0, $bufferMinutes);
+
+        // Get availability periods for this date in a single query
+        $availabilityPeriods = $this->getAvailabilityPeriodsForDate($date);
+
+        if ($availabilityPeriods->isEmpty()) {
+            return [];
+        }
+
+        // Get all blocking schedules in a single query for conflict checking
+        $blockingSchedules = $this->getBlockingSchedulesForDate($date);
+
+        $slotInterval = $slotDuration + $bufferMinutes;
+        $allSlots = collect();
+
+        // Generate slots for each availability period
+        $availabilityPeriods->each(function ($period) use ($date, $slotDuration, $bufferMinutes, $slotInterval, $blockingSchedules, &$allSlots) {
+            $currentTime = \Carbon\Carbon::parse($date.' '.$period->start_time);
+            $periodEnd = \Carbon\Carbon::parse($date.' '.$period->end_time);
+
+            while ($currentTime->lessThan($periodEnd)) {
+                $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
+
+                if ($slotEnd->lessThanOrEqualTo($periodEnd)) {
+                    $startTime = $currentTime->format('H:i');
+                    $endTime = $slotEnd->format('H:i');
+
+                    // Check availability against pre-loaded blocking schedules
+                    $isAvailable = $this->isSlotAvailable($startTime, $endTime, $date, $blockingSchedules, $bufferMinutes);
+
+                    $allSlots->push([
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'is_available' => $isAvailable,
+                        'buffer_minutes' => $bufferMinutes,
+                    ]);
+                }
+
+                $currentTime->addMinutes($slotInterval);
+            }
+        });
+
+        // Remove duplicates and sort
+        return $allSlots
+            ->unique(fn ($slot) => $slot['start_time'].'|'.$slot['end_time'])
+            ->sortBy('start_time')
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Get all availability periods for a specific date in a single optimized query.
+     */
+    protected function getAvailabilityPeriodsForDate(string $date): \Illuminate\Support\Collection
+    {
+        $checkDate = \Carbon\Carbon::parse($date);
+
+        // Get all availability schedules for this date
+        $availabilitySchedules = Schedule::where('schedulable_type', get_class($this))
+            ->where('schedulable_id', $this->getKey())
+            ->availability()
+            ->active()
+            ->forDate($date)
+            ->with('periods')
+            ->get();
+
+        $allPeriods = collect();
+
+        $availabilitySchedules->each(function ($schedule) use ($date, $checkDate, &$allPeriods) {
+            if (! $schedule->isActiveOn($date)) {
+                return;
+            }
+
+            if ($schedule->is_recurring) {
+                if ($this->shouldCreateRecurringInstance($schedule, $checkDate)) {
+                    $schedule->periods->each(function ($period) use (&$allPeriods) {
+                        $allPeriods->push((object) [
+                            'start_time' => $period->start_time,
+                            'end_time' => $period->end_time,
+                        ]);
+                    });
+                }
+            } else {
+                $schedule->periods()
+                    ->forDate($date)
+                    ->get(['start_time', 'end_time'])
+                    ->each(function ($period) use (&$allPeriods) {
+                        $allPeriods->push($period);
+                    });
+            }
+        });
+
+        return $allPeriods;
+    }
+
+    /**
+     * Get all blocking schedules for a specific date in a single query.
+     */
+    protected function getBlockingSchedulesForDate(string $date): \Illuminate\Support\Collection
+    {
+        return Schedule::where('schedulable_type', get_class($this))
+            ->where('schedulable_id', $this->getKey())
+            ->whereIn('schedule_type', [ScheduleTypes::APPOINTMENT, ScheduleTypes::BLOCKED, ScheduleTypes::CUSTOM])
+            ->active()
+            ->forDate($date)
+            ->with('periods')
+            ->get();
+    }
+
+    /**
+     * Check if a slot is available against pre-loaded blocking schedules.
+     */
+    protected function isSlotAvailable(string $startTime, string $endTime, string $date, \Illuminate\Support\Collection $blockingSchedules, int $bufferMinutes = 0): bool
+    {
+        foreach ($blockingSchedules as $schedule) {
+            if ($schedule->schedule_type->is(ScheduleTypes::CUSTOM) || $schedule->preventsOverlaps()) {
+                if ($this->scheduleBlocksTime($schedule, $date, $startTime, $endTime)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the next bookable time slot that respects availability schedules.
+     */
+    public function getNextBookableSlot(
+        ?string $afterDate = null,
+        int $duration = 60,
+        ?int $bufferMinutes = null
+    ): ?array {
+        if ($duration <= 0) {
+            return null;
+        }
+
+        $startDate = $afterDate ?? now()->format('Y-m-d');
+        $checkDate = \Carbon\Carbon::parse($startDate);
+
+        // Check up to 30 days in the future
+        for ($i = 0; $i < 30; $i++) {
+            $dateString = $checkDate->format('Y-m-d');
+            $slots = $this->getBookableSlots($dateString, $duration, $bufferMinutes);
+
+            foreach ($slots as $slot) {
+                if ($slot['is_available']) {
+                    return array_merge($slot, ['date' => $dateString]);
+                }
+            }
+
+            $checkDate->addDay();
+        }
+
+        return null;
     }
 
     /**
@@ -336,7 +519,8 @@ trait HasSchedules
         ?string $afterDate = null,
         int $duration = 60,
         string $dayStart = '09:00',
-        string $dayEnd = '17:00'
+        string $dayEnd = '17:00',
+        ?int $bufferMinutes = null
     ): ?array {
         // Validate inputs
         if ($duration <= 0) {
@@ -349,7 +533,7 @@ trait HasSchedules
         // Check up to 30 days in the future
         for ($i = 0; $i < 30; $i++) {
             $dateString = $checkDate->format('Y-m-d');
-            $slots = $this->getAvailableSlots($dateString, $dayStart, $dayEnd, $duration);
+            $slots = $this->getAvailableSlots($dateString, $dayStart, $dayEnd, $duration, $bufferMinutes);
 
             foreach ($slots as $slot) {
                 if ($slot['is_available']) {

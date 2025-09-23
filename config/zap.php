@@ -78,6 +78,7 @@ return [
         'default_duration' => 60, // minutes
         'min_duration' => 15, // minutes
         'max_duration' => 480, // minutes (8 hours)
+        'buffer_minutes' => 0, // Buffer time between sessions (e.g., 10 minutes between appointments)
         'business_hours' => [
             'start' => '09:00',
             'end' => '17:00',

@@ -236,3 +236,19 @@ it('validates maximum duration rule', function () {
             ->save();
     })->toThrow(InvalidScheduleException::class);
 });
+
+it('handles lpad for period times', function () {
+    $user = createUser();
+
+    $schedule = Zap::for($user)
+        ->from('2025-11-10')
+        ->addPeriod('8:00', '10:00')
+        ->save();
+
+    $overlapping = \Zap\Models\SchedulePeriod::query()
+        ->where('schedule_id', $schedule->id)
+        ->overlapping('2025-11-10', '7:00', '9:00')
+        ->exists();
+
+    expect($overlapping)->toBeTrue();
+});

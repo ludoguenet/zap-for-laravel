@@ -62,7 +62,7 @@ jobs:
           DB_DATABASE: laravel_test
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: ./vendor/bin/pest --parallel
+        run: ./vendor/bin/pest
 
   test-postgres:
     runs-on: ubuntu-latest
@@ -98,4 +98,4 @@ jobs:
           DB_DATABASE: laravel_test
           DB_USERNAME: postgres
           DB_PASSWORD: password
-        run: ./vendor/bin/pest --parallel
+        run: ./vendor/bin/pest

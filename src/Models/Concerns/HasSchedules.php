@@ -256,6 +256,12 @@ trait HasSchedules
      */
     protected function timePeriodsOverlap(string $start1, string $end1, string $start2, string $end2): bool
     {
+        // Normalize times to HH:MM format for consistent comparison
+        $start1 = substr($start1, 0, 5);
+        $end1 = substr($end1, 0, 5);
+        $start2 = substr($start2, 0, 5);
+        $end2 = substr($end2, 0, 5);
+        
         return $start1 < $end2 && $end1 > $start2;
     }
 

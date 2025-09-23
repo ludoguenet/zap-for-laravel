@@ -197,8 +197,8 @@ class SchedulePeriod extends Model
     private function applyStandardTimeOverlap($query, string $startTime, string $endTime)
     {
         return $query
-            ->whereRaw('LPAD(start_time, 5, "0") < ?', [$endTime])
-            ->whereRaw('LPAD(end_time, 5, "0") > ?', [$startTime]);
+            ->whereRaw("LPAD(start_time, 5, '0') < ?", [$endTime])
+            ->whereRaw("LPAD(end_time, 5, '0') > ?", [$startTime]);
     }
 
     /**

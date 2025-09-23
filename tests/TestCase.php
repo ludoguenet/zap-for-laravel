@@ -13,8 +13,6 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 
     protected function getPackageProviders($app): array
@@ -26,15 +24,6 @@ abstract class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
-        if (! env('DB_CONNECTION', null)) {
-            config()->set('database.default', 'testing');
-            config()->set('database.connections.testing', [
-                'driver' => 'sqlite',
-                'database' => ':memory:',
-                'prefix' => '',
-            ]);
-        }
-
         // Load package configuration with test-friendly defaults
         $app['config']->set('zap', [
             'conflict_detection' => [

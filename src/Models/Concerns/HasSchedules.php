@@ -3,6 +3,7 @@
 namespace Zap\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 use Zap\Builders\ScheduleBuilder;
 use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
@@ -135,10 +136,10 @@ trait HasSchedules
     /**
      * Check if this model is available during a specific time period.
      */
-    public function isAvailableAt(string $date, string $startTime, string $endTime): bool
+    public function isAvailableAt(string $date, string $startTime, string $endTime, ?Collection $schedules = null): bool
     {
         // Get all active schedules for this model on this date
-        $schedules = \Zap\Models\Schedule::where('schedulable_type', get_class($this))
+        $schedules = $schedules ?? \Zap\Models\Schedule::where('schedulable_type', get_class($this))
             ->where('schedulable_id', $this->getKey())
             ->active()
             ->forDate($date)
@@ -311,6 +312,13 @@ trait HasSchedules
         $maxIterations = 1440;
         $iterations = 0;
 
+        $schedules = \Zap\Models\Schedule::where('schedulable_type', get_class($this))
+            ->where('schedulable_id', $this->getKey())
+            ->active()
+            ->forDate($date)
+            ->with('periods')
+            ->get();
+
         while ($currentTime->lessThan($endTime) && $iterations < $maxIterations) {
             $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
 
@@ -318,7 +326,8 @@ trait HasSchedules
                 $isAvailable = $this->isAvailableAt(
                     $date,
                     $currentTime->format('H:i'),
-                    $slotEnd->format('H:i')
+                    $slotEnd->format('H:i'),
+                    $schedules
                 );
 
                 $slots[] = [

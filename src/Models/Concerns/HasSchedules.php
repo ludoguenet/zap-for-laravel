@@ -262,7 +262,7 @@ trait HasSchedules
         $end1 = substr($end1, 0, 5);
         $start2 = substr($start2, 0, 5);
         $end2 = substr($end2, 0, 5);
-        
+
         return $start1 < $end2 && $end1 > $start2;
     }
 

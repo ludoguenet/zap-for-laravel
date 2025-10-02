@@ -219,7 +219,7 @@ class ScheduleService
     /**
      * Check if a recurring instance should be created for the given date.
      */
-    private function shouldCreateInstance(Schedule $schedule, \Carbon\Carbon $date): bool
+    private function shouldCreateInstance(Schedule $schedule, \Carbon\CarbonInterface $date): bool
     {
         $frequency = $schedule->frequency;
         $config = $schedule->frequency_config ?? [];
@@ -246,7 +246,7 @@ class ScheduleService
     /**
      * Get the next recurrence date.
      */
-    private function getNextRecurrence(Schedule $schedule, \Carbon\Carbon $current): \Carbon\Carbon
+    private function getNextRecurrence(Schedule $schedule, \Carbon\CarbonInterface $current): \Carbon\CarbonInterface
     {
         $frequency = $schedule->frequency;
 

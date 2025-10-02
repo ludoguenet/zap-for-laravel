@@ -212,6 +212,31 @@ describe('Conflict Detection', function () {
         }
     });
 
+    it('handles recurring schedule conflicts when CarbonImmutable is enabled globally', function () {
+//        \Illuminate\Support\Facades\Date::use(\Carbon\CarbonImmutable::class);
+        \Illuminate\Support\Facades\Date::use(\Carbon\CarbonImmutable::class);
+
+        $user = createUser();
+
+        // Create recurring schedule
+        Zap::for($user)
+            ->named('Weekly Meeting')
+            ->from('2025-01-01')
+            ->to('2025-12-31')
+            ->addPeriod('09:00', '10:00')
+            ->weekly(['monday'])
+            ->save();
+
+        // Try to create conflicting one-time event on a Monday
+        // This should throw ScheduleConflictException
+        expect(function () use ($user) {
+            Zap::for($user)
+                ->from('2025-01-06') // This is a Monday (Jan 6, 2025)
+                ->addPeriod('09:30', '10:30')
+                ->noOverlap()
+                ->save();
+        })->toThrow(ScheduleConflictException::class);
+    });
 });
 
 describe('Availability Checking', function () {

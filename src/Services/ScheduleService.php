@@ -250,18 +250,11 @@ class ScheduleService
     {
         $frequency = $schedule->frequency;
 
-        switch ($frequency) {
-            case 'daily':
-                return $current->addDay();
-
-            case 'weekly':
-                return $current->addWeek();
-
-            case 'monthly':
-                return $current->addMonth();
-
-            default:
-                return $current->addDay();
-        }
+        return match ($frequency) {
+            'daily' => $current->copy()->addDay(),
+            'weekly' => $current->copy()->addWeek(),
+            'monthly' => $current->copy()->addMonth(),
+            default => $current->copy()->addDay(),
+        };
     }
 }

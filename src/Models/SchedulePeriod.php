@@ -7,6 +7,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Date;
 use PDO;
 
 /**
@@ -76,17 +77,17 @@ class SchedulePeriod extends Model
     /**
      * Get the full start datetime.
      */
-    public function getStartDateTimeAttribute(): Carbon
+    public function getStartDateTimeAttribute(): CarbonInterface
     {
-        return Carbon::parse($this->date->format('Y-m-d').' '.$this->start_time);
+        return Date::parse($this->date->format('Y-m-d').' '.$this->start_time);
     }
 
     /**
      * Get the full end datetime.
      */
-    public function getEndDateTimeAttribute(): Carbon
+    public function getEndDateTimeAttribute(): CarbonInterface
     {
-        return Carbon::parse($this->date->format('Y-m-d').' '.$this->end_time);
+        return Date::parse($this->date->format('Y-m-d').' '.$this->end_time);
     }
 
     /**

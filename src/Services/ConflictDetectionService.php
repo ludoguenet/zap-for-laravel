@@ -257,7 +257,7 @@ class ConflictDetectionService
     /**
      * Check if a recurring instance should be created for the given date.
      */
-    protected function shouldCreateRecurringInstance(Schedule $schedule, \Carbon\Carbon $date): bool
+    protected function shouldCreateRecurringInstance(Schedule $schedule, \Carbon\CarbonInterface $date): bool
     {
         $frequency = $schedule->frequency;
         $config = $schedule->frequency_config ?? [];
@@ -296,7 +296,7 @@ class ConflictDetectionService
     /**
      * Get the next recurrence date for a recurring schedule.
      */
-    protected function getNextRecurrence(Schedule $schedule, \Carbon\Carbon $current): \Carbon\Carbon
+    protected function getNextRecurrence(Schedule $schedule, \Carbon\CarbonInterface $current): \Carbon\CarbonInterface
     {
         $frequency = $schedule->frequency;
         $config = $schedule->frequency_config ?? [];
@@ -323,7 +323,7 @@ class ConflictDetectionService
     /**
      * Get the next weekly occurrence for the given days.
      */
-    protected function getNextWeeklyOccurrence(\Carbon\Carbon $current, array $allowedDays): \Carbon\Carbon
+    protected function getNextWeeklyOccurrence(\Carbon\CarbonInterface $current, array $allowedDays): \Carbon\CarbonInterface
     {
         $next = $current->copy()->addDay();
 
@@ -343,7 +343,7 @@ class ConflictDetectionService
 
         // Find the next allowed day
         while (! in_array($next->dayOfWeek, $allowedDayNumbers)) {
-            $next->addDay();
+            $next = $next->addDay();
 
             // Prevent infinite loop
             if ($next->diffInDays($current) > 7) {

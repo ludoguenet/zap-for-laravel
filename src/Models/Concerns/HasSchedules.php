@@ -216,7 +216,7 @@ trait HasSchedules
     /**
      * Check if a recurring instance should be created for the given date.
      */
-    protected function shouldCreateRecurringInstance(\Zap\Models\Schedule $schedule, \Carbon\Carbon $date): bool
+    protected function shouldCreateRecurringInstance(\Zap\Models\Schedule $schedule, \Carbon\CarbonInterface $date): bool
     {
         $frequency = $schedule->frequency;
         $config = $schedule->frequency_config ?? [];
@@ -337,7 +337,7 @@ trait HasSchedules
                 ];
             }
 
-            $currentTime->addMinutes($slotDuration);
+            $currentTime = $currentTime->addMinutes($slotDuration);
             $iterations++;
         }
 
@@ -372,7 +372,7 @@ trait HasSchedules
                 }
             }
 
-            $checkDate->addDay();
+            $checkDate = $checkDate->addDay();
         }
 
         return null;

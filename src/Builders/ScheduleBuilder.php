@@ -3,6 +3,7 @@
 namespace Zap\Builders;
 
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
@@ -51,9 +52,9 @@ class ScheduleBuilder
     /**
      * Set the start date.
      */
-    public function from(Carbon|string $startDate): self
+    public function from(CarbonInterface|string $startDate): self
     {
-        $this->attributes['start_date'] = $startDate instanceof Carbon
+        $this->attributes['start_date'] = $startDate instanceof CarbonInterface
             ? $startDate->toDateString()
             : $startDate;
 
@@ -63,7 +64,7 @@ class ScheduleBuilder
     /**
      * Alias of from()
      */
-    public function on(Carbon|string $startDate): self
+    public function on(CarbonInterface|string $startDate): self
     {
         return $this->from($startDate);
     }
@@ -71,9 +72,9 @@ class ScheduleBuilder
     /**
      * Set the end date.
      */
-    public function to(Carbon|string|null $endDate): self
+    public function to(CarbonInterface|string|null $endDate): self
     {
-        $this->attributes['end_date'] = $endDate instanceof Carbon
+        $this->attributes['end_date'] = $endDate instanceof CarbonInterface
             ? $endDate->toDateString()
             : $endDate;
 
@@ -83,7 +84,7 @@ class ScheduleBuilder
     /**
      * Set both start and end dates.
      */
-    public function between(Carbon|string $start, Carbon|string $end): self
+    public function between(CarbonInterface|string $start, CarbonInterface|string $end): self
     {
         return $this->from($start)->to($end);
     }
@@ -91,7 +92,7 @@ class ScheduleBuilder
     /**
      * Add a time period to the schedule.
      */
-    public function addPeriod(string $startTime, string $endTime, ?Carbon $date = null): self
+    public function addPeriod(string $startTime, string $endTime, ?CarbonInterface $date = null): self
     {
         $this->periods[] = [
             'start_time' => $startTime,

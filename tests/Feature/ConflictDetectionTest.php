@@ -213,7 +213,7 @@ describe('Conflict Detection', function () {
     });
 
     it('handles recurring schedule conflicts when CarbonImmutable is enabled globally', function () {
-//        \Illuminate\Support\Facades\Date::use(\Carbon\CarbonImmutable::class);
+        //        \Illuminate\Support\Facades\Date::use(\Carbon\CarbonImmutable::class);
         \Illuminate\Support\Facades\Date::use(\Carbon\CarbonImmutable::class);
 
         $user = createUser();

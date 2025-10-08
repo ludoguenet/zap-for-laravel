@@ -153,29 +153,28 @@ class ValidationService
         // End time must be after start time
         if (! empty($period['start_time']) && ! empty($period['end_time'])) {
             $baseDate = '2024-01-01'; // Use a consistent base date for time parsing
-            $start = \Carbon\Carbon::parse($baseDate.' '.$period['start_time']);
-            $end = \Carbon\Carbon::parse($baseDate.' '.$period['end_time']);
+            $start = \Carbon\Carbon::parse($baseDate . ' ' . $period['start_time']);
+            $end = \Carbon\Carbon::parse($baseDate . ' ' . $period['end_time']);
 
             if ($end->lte($start)) {
                 $errors["{$prefix}.end_time"] = "End time ({$period['end_time']}) must be after start time ({$period['start_time']})";
             }
 
             // Duration validation
-            $duration = $start->diffInMinutes($end);
-            $minDuration = config('zap.validation.min_period_duration', 15);
-
-            $maxDuration = 1440;
-
             if (config('zap.default_rules.max_duration.enabled')) {
+                // Duration validation
+                $duration = $start->diffInMinutes($end);
+
                 $maxDuration = config('zap.default_rules.max_duration.minutes', 480);
-            }
+                $minDuration = config('zap.validation.min_period_duration', 15);
 
-            if ($duration < $minDuration) {
-                $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";
-            }
+                if ($duration < $minDuration) {
+                    $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";
+                }
 
-            if ($duration > $maxDuration) {
-                $errors["{$prefix}.duration"] = "Period is too long ({$duration} minutes). Maximum duration is {$maxDuration} minutes";
+                if ($duration > $maxDuration) {
+                    $errors["{$prefix}.duration"] = "Period is too long ({$duration} minutes). Maximum duration is {$maxDuration} minutes";
+                }
             }
         }
 
@@ -224,16 +223,18 @@ class ValidationService
      */
     protected function periodsOverlap(array $period1, array $period2): bool
     {
-        if (empty($period1['start_time']) || empty($period1['end_time']) ||
-            empty($period2['start_time']) || empty($period2['end_time'])) {
+        if (
+            empty($period1['start_time']) || empty($period1['end_time']) ||
+            empty($period2['start_time']) || empty($period2['end_time'])
+        ) {
             return false;
         }
 
         $baseDate = '2024-01-01'; // Use a consistent base date for time parsing
-        $start1 = \Carbon\Carbon::parse($baseDate.' '.$period1['start_time']);
-        $end1 = \Carbon\Carbon::parse($baseDate.' '.$period1['end_time']);
-        $start2 = \Carbon\Carbon::parse($baseDate.' '.$period2['start_time']);
-        $end2 = \Carbon\Carbon::parse($baseDate.' '.$period2['end_time']);
+        $start1 = \Carbon\Carbon::parse($baseDate . ' ' . $period1['start_time']);
+        $end1 = \Carbon\Carbon::parse($baseDate . ' ' . $period1['end_time']);
+        $start2 = \Carbon\Carbon::parse($baseDate . ' ' . $period2['start_time']);
+        $end2 = \Carbon\Carbon::parse($baseDate . ' ' . $period2['end_time']);
 
         return $start1 < $end2 && $end1 > $start2;
     }
@@ -436,16 +437,16 @@ class ValidationService
 
         $errors = [];
         $baseDate = '2024-01-01'; // Use a consistent base date for time parsing
-        $workStart = \Carbon\Carbon::parse($baseDate.' '.$startTime);
-        $workEnd = \Carbon\Carbon::parse($baseDate.' '.$endTime);
+        $workStart = \Carbon\Carbon::parse($baseDate . ' ' . $startTime);
+        $workEnd = \Carbon\Carbon::parse($baseDate . ' ' . $endTime);
 
         foreach ($periods as $index => $period) {
             if (empty($period['start_time']) || empty($period['end_time'])) {
                 continue;
             }
 
-            $periodStart = \Carbon\Carbon::parse($baseDate.' '.$period['start_time']);
-            $periodEnd = \Carbon\Carbon::parse($baseDate.' '.$period['end_time']);
+            $periodStart = \Carbon\Carbon::parse($baseDate . ' ' . $period['start_time']);
+            $periodEnd = \Carbon\Carbon::parse($baseDate . ' ' . $period['end_time']);
 
             if ($periodStart->lt($workStart) || $periodEnd->gt($workEnd)) {
                 $errors["periods.{$index}.working_hours"] =
@@ -474,8 +475,8 @@ class ValidationService
             }
 
             $baseDate = '2024-01-01'; // Use a consistent base date for time parsing
-            $start = \Carbon\Carbon::parse($baseDate.' '.$period['start_time']);
-            $end = \Carbon\Carbon::parse($baseDate.' '.$period['end_time']);
+            $start = \Carbon\Carbon::parse($baseDate . ' ' . $period['start_time']);
+            $end = \Carbon\Carbon::parse($baseDate . ' ' . $period['end_time']);
             $duration = $start->diffInMinutes($end);
 
             if ($duration > $maxMinutes) {
@@ -625,7 +626,7 @@ class ValidationService
             ? 'Schedule validation failed with 1 error:'
             : "Schedule validation failed with {$errorCount} errors:";
 
-        return $summary."\n".implode("\n", $errorMessages);
+        return $summary . "\n" . implode("\n", $errorMessages);
     }
 
     /**

@@ -24,4 +24,8 @@
     <logging>
         <junit outputFile="build/report.junit.xml"/>
     </logging>
+    <php>
+        <env name="DB_CONNECTION" value="testing" force="false"/>
+        <env name="DB_DATABASE" value=":memory:" force="false"/>
+    </php>
 </phpunit>

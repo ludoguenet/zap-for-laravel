@@ -161,21 +161,20 @@ class ValidationService
             }
 
             // Duration validation
-            $duration = $start->diffInMinutes($end);
-            $minDuration = config('zap.validation.min_period_duration', 15);
-
-            $maxDuration = 1440;
-
             if (config('zap.default_rules.max_duration.enabled')) {
+                // Duration validation
+                $duration = $start->diffInMinutes($end);
+
                 $maxDuration = config('zap.default_rules.max_duration.minutes', 480);
-            }
+                $minDuration = config('zap.validation.min_period_duration', 15);
 
-            if ($duration < $minDuration) {
-                $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";
-            }
+                if ($duration < $minDuration) {
+                    $errors["{$prefix}.duration"] = "Period is too short ({$duration} minutes). Minimum duration is {$minDuration} minutes";
+                }
 
-            if ($duration > $maxDuration) {
-                $errors["{$prefix}.duration"] = "Period is too long ({$duration} minutes). Maximum duration is {$maxDuration} minutes";
+                if ($duration > $maxDuration) {
+                    $errors["{$prefix}.duration"] = "Period is too long ({$duration} minutes). Maximum duration is {$maxDuration} minutes";
+                }
             }
         }
 
@@ -224,8 +223,10 @@ class ValidationService
      */
     protected function periodsOverlap(array $period1, array $period2): bool
     {
-        if (empty($period1['start_time']) || empty($period1['end_time']) ||
-            empty($period2['start_time']) || empty($period2['end_time'])) {
+        if (
+            empty($period1['start_time']) || empty($period1['end_time']) ||
+            empty($period2['start_time']) || empty($period2['end_time'])
+        ) {
             return false;
         }
 

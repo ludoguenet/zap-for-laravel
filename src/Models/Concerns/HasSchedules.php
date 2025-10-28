@@ -3,6 +3,7 @@
 namespace Zap\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 use Zap\Builders\ScheduleBuilder;
 use Zap\Enums\ScheduleTypes;
 use Zap\Models\Schedule;
@@ -135,10 +136,10 @@ trait HasSchedules
     /**
      * Check if this model is available during a specific time period.
      */
-    public function isAvailableAt(string $date, string $startTime, string $endTime): bool
+    public function isAvailableAt(string $date, string $startTime, string $endTime, ?Collection $schedules = null): bool
     {
         // Get all active schedules for this model on this date
-        $schedules = \Zap\Models\Schedule::where('schedulable_type', get_class($this))
+        $schedules = $schedules ?? \Zap\Models\Schedule::where('schedulable_type', get_class($this))
             ->where('schedulable_id', $this->getKey())
             ->active()
             ->forDate($date)
@@ -215,7 +216,7 @@ trait HasSchedules
     /**
      * Check if a recurring instance should be created for the given date.
      */
-    protected function shouldCreateRecurringInstance(\Zap\Models\Schedule $schedule, \Carbon\Carbon $date): bool
+    protected function shouldCreateRecurringInstance(\Zap\Models\Schedule $schedule, \Carbon\CarbonInterface $date): bool
     {
         $frequency = $schedule->frequency;
         $config = $schedule->frequency_config ?? [];
@@ -256,6 +257,12 @@ trait HasSchedules
      */
     protected function timePeriodsOverlap(string $start1, string $end1, string $start2, string $end2): bool
     {
+        // Normalize times to HH:MM format for consistent comparison
+        $start1 = substr($start1, 0, 5);
+        $end1 = substr($end1, 0, 5);
+        $start2 = substr($start2, 0, 5);
+        $end2 = substr($end2, 0, 5);
+
         return $start1 < $end2 && $end1 > $start2;
     }
 
@@ -311,8 +318,14 @@ trait HasSchedules
         // Safety counter to prevent infinite loops (max 1440 minutes in a day / min slot duration)
         $maxIterations = 1440;
         $iterations = 0;
-
         $slotInterval = $slotDuration + $bufferMinutes;
+
+        $schedules = \Zap\Models\Schedule::where('schedulable_type', get_class($this))
+            ->where('schedulable_id', $this->getKey())
+            ->active()
+            ->forDate($date)
+            ->with('periods')
+            ->get();
 
         while ($currentTime->lessThan($endTime) && $iterations < $maxIterations) {
             $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
@@ -321,7 +334,8 @@ trait HasSchedules
                 $isAvailable = $this->isAvailableAt(
                     $date,
                     $currentTime->format('H:i'),
-                    $slotEnd->format('H:i')
+                    $slotEnd->format('H:i'),
+                    $schedules
                 );
 
                 $slots[] = [
@@ -332,7 +346,8 @@ trait HasSchedules
                 ];
             }
 
-            $currentTime->addMinutes($slotInterval);
+            $currentTime = $currentTime->addMinutes($slotInterval);
+
             $iterations++;
         }
 
@@ -368,7 +383,7 @@ trait HasSchedules
                 }
             }
 
-            $checkDate->addDay();
+            $checkDate = $checkDate->addDay();
         }
 
         return null;

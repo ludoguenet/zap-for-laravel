@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Zap\Facades\Zap;
 
 describe('Recurring Schedule Availability', function () {
@@ -171,6 +172,23 @@ describe('Recurring Schedule Availability', function () {
                 "Evening slot {$slot['start_time']}-{$slot['end_time']} should be available"
             );
         }
+    });
+
+    it('should make only two queries when execute getAvailableSlots', function () {
+        $user = createUser();
+
+        // Block afternoon every day
+        Zap::for($user)
+            ->named('Afternoon Block')
+            ->from('2025-03-15')
+            ->addPeriod('13:00', '17:00')
+            ->daily()
+            ->save();
+
+        DB::enableQueryLog();
+        $user->getAvailableSlots('2025-03-15', '08:00', '18:00', 60);
+        $queries = DB::getQueryLog();
+        expect(count($queries))->toBe(2);
     });
 
     it('getNextAvailableSlot works correctly with recurring schedules', function () {

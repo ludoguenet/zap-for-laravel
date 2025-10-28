@@ -128,7 +128,7 @@ class SchedulePeriod extends Model
      */
     public function scopeForDate(\Illuminate\Database\Eloquent\Builder $query, string $date): \Illuminate\Database\Eloquent\Builder
     {
-        return $query->where('date', $date);
+        return $query->where('date', Carbon::parse($date));
     }
 
     /**

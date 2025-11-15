@@ -68,8 +68,7 @@ $schedule = Zap::for($user)
 // Weekly team meeting
 $meeting = Zap::for($user)
     ->named('Team Standup')
-    ->from('2025-01-01')
-    ->to('2025-12-31')
+    ->forYear(2025) // equivalent: ->from('2025-01-01')->to('2025-12-31')
     ->addPeriod('09:00', '09:30')
     ->weekly(['monday', 'wednesday', 'friday'])
     ->save();

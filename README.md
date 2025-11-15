@@ -73,6 +73,14 @@ $meeting = Zap::for($user)
     ->addPeriod('09:00', '09:30')
     ->weekly(['monday', 'wednesday', 'friday'])
     ->save();
+
+// Yearly schedule (convenience method)
+$yearlySchedule = Zap::for($user)
+    ->named('Annual Availability')
+    ->forYear(2025) // Sets start_date to 2025-01-01 and end_date to 2025-12-31
+    ->addPeriod('09:00', '17:00')
+    ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    ->save();
 ```
 
 ### Schedule with Rules
@@ -284,6 +292,34 @@ $emergency = Zap::for($user)
     ->addPeriod('10:30', '12:00')
     ->withRule('no_overlap', ['enabled' => false])
     ->save(); // Bypasses overlap validation
+```
+
+### Date Methods
+```php
+// Set start date
+$schedule = Zap::for($user)
+    ->from('2025-01-01') // or ->on('2025-01-01')
+    ->addPeriod('09:00', '17:00')
+    ->save();
+
+// Set date range
+$schedule = Zap::for($user)
+    ->from('2025-01-01')
+    ->to('2025-12-31')
+    ->addPeriod('09:00', '17:00')
+    ->save();
+
+// Set date range using between method
+$schedule = Zap::for($user)
+    ->between('2025-01-01', '2025-12-31')
+    ->addPeriod('09:00', '17:00')
+    ->save();
+
+// Set date range for entire year (convenience method)
+$schedule = Zap::for($user)
+    ->forYear(2025) // Automatically sets start_date to 2025-01-01 and end_date to 2025-12-31
+    ->addPeriod('09:00', '17:00')
+    ->save();
 ```
 
 ### Schedule Queries

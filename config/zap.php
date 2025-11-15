@@ -63,7 +63,7 @@ return [
         'process_days_ahead' => 30, // Generate instances this many days ahead
         'cleanup_expired_after_days' => 90, // Clean up expired schedules after X days
         'max_instances' => 1000, // Maximum instances to generate at once
-        'supported_frequencies' => ['daily', 'weekly', 'monthly', 'yearly'],
+        'supported_frequencies' => ['daily', 'weekly', 'monthly'],
     ],
 
     /*

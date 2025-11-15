@@ -159,12 +159,54 @@ class Schedule extends Model
      */
     public function scopeForDate(Builder $query, string $date): void
     {
-        $checkDate = \Carbon\Carbon::parse($date);
+        $checkDate = Carbon::parse($date);
+        $weekday = strtolower($checkDate->format('l')); // monday, tuesday, ...
+        $dayOfMonth = $checkDate->day;
 
-        $query->where('start_date', '<=', $checkDate)
+        $query
+            // date range
+            ->where('start_date', '<=', $checkDate)
             ->where(function ($q) use ($checkDate) {
                 $q->whereNull('end_date')
                     ->orWhere('end_date', '>=', $checkDate);
+            })
+
+            // recurrence logic
+            ->where(function ($q) use ($weekday, $dayOfMonth) {
+
+                //
+                // 1️⃣ NOT RECURRING — always match
+                //
+                $q->where('is_recurring', false)
+
+                //
+                // 2️⃣ DAILY — match all days
+                //
+                    ->orWhere(function ($daily) {
+                        $daily->where('is_recurring', true)
+                            ->where('frequency', 'daily');
+                    })
+
+                //
+                // 3️⃣ WEEKLY — match weekday inside config
+                //
+                    ->orWhere(function ($weekly) use ($weekday) {
+                        $weekly->where('is_recurring', true)
+                            ->where('frequency', 'weekly')
+                            ->whereJsonContains('frequency_config->days', $weekday);
+                    })
+
+                //
+                // 4️⃣ MONTHLY — match day_of_month from config
+                //
+                    ->orWhere(function ($monthly) use ($dayOfMonth) {
+                        $monthly->where('is_recurring', true)
+                            ->where('frequency', 'monthly')
+                            ->where(function ($m) use ($dayOfMonth) {
+                                $m->whereJsonContains('frequency_config->day_of_month', $dayOfMonth)
+                                    ->orWhere('frequency_config->day_of_month', $dayOfMonth);
+                            });
+                    });
             });
     }
 

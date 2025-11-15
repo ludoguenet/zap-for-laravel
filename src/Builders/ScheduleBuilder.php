@@ -82,6 +82,18 @@ class ScheduleBuilder
     }
 
     /**
+     * Set the date for a specific year.
+     */
+    public function forYear(int $year): self
+    {
+        $this
+            ->from("$year-01-01")
+            ->to("$year-12-31");
+
+        return $this;
+    }
+
+    /**
      * Set both start and end dates.
      */
     public function between(CarbonInterface|string $start, CarbonInterface|string $end): self

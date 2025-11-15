@@ -182,6 +182,64 @@ describe('ScheduleBuilder', function () {
         expect($built['attributes']['end_date'])->toBe('2025-12-31');
     });
 
+    it('can use forYear method to set date range for a year', function () {
+        $user = createUser();
+
+        $builder = new ScheduleBuilder;
+        $built = $builder
+            ->for($user)
+            ->forYear(2025)
+            ->build();
+
+        expect($built['attributes']['start_date'])->toBe('2025-01-01');
+        expect($built['attributes']['end_date'])->toBe('2025-12-31');
+    });
+
+    it('can use forYear with different years', function () {
+        $user = createUser();
+
+        $builder = new ScheduleBuilder;
+
+        // Test with 2024
+        $built2024 = $builder
+            ->for($user)
+            ->forYear(2024)
+            ->build();
+
+        expect($built2024['attributes']['start_date'])->toBe('2024-01-01');
+        expect($built2024['attributes']['end_date'])->toBe('2024-12-31');
+
+        // Test with 2026
+        $builder->reset();
+        $built2026 = $builder
+            ->for($user)
+            ->forYear(2026)
+            ->build();
+
+        expect($built2026['attributes']['start_date'])->toBe('2026-01-01');
+        expect($built2026['attributes']['end_date'])->toBe('2026-12-31');
+    });
+
+    it('can chain forYear with other methods', function () {
+        $user = createUser();
+
+        $builder = new ScheduleBuilder;
+        $built = $builder
+            ->for($user)
+            ->named('Yearly Schedule')
+            ->forYear(2025)
+            ->addPeriod('09:00', '17:00')
+            ->weekly(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+            ->build();
+
+        expect($built['attributes']['name'])->toBe('Yearly Schedule');
+        expect($built['attributes']['start_date'])->toBe('2025-01-01');
+        expect($built['attributes']['end_date'])->toBe('2025-12-31');
+        expect($built['attributes']['is_recurring'])->toBe(true);
+        expect($built['attributes']['frequency'])->toBe('weekly');
+        expect($built['periods'])->toHaveCount(1);
+    });
+
     it('provides getter methods for current state', function () {
         $user = createUser();
 
@@ -214,6 +272,22 @@ describe('ScheduleBuilder Integration', function () {
 
         expect($schedule)->toBeInstanceOf(Schedule::class);
         expect($schedule->name)->toBe('Integration Test');
+    });
+
+    it('can save schedule using forYear method', function () {
+        $user = createUser();
+
+        $schedule = (new ScheduleBuilder)
+            ->for($user)
+            ->named('Yearly Integration Test')
+            ->forYear(2025)
+            ->addPeriod('09:00', '10:00')
+            ->save();
+
+        expect($schedule)->toBeInstanceOf(Schedule::class);
+        expect($schedule->name)->toBe('Yearly Integration Test');
+        expect($schedule->start_date->format('Y-m-d'))->toBe('2025-01-01');
+        expect($schedule->end_date->format('Y-m-d'))->toBe('2025-12-31');
     });
 
 });

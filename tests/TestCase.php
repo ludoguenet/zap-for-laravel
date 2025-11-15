@@ -3,12 +3,16 @@
 namespace Zap\Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithCachedConfig;
+use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Zap\ZapServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
+    use WithCachedConfig;
+    use WithCachedRoutes;
 
     protected function setUp(): void
     {

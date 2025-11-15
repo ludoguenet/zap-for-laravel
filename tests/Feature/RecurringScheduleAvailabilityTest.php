@@ -330,4 +330,28 @@ describe('Recurring Schedule Availability', function () {
         );
     });
 
+    it('isAvailableAt returns true for time slots after schedule ends', function () {
+        // Issue #36: https://github.com/ludoguenet/zap-for-laravel/issues/36
+        $start = Carbon::parse('2025-11-02 01:00:00');
+        $end = Carbon::parse('2025-11-05 01:00:00');
+
+        $schedule = Zap::for($user = createUser())
+            ->named('Test Booking')
+            ->appointment()
+            ->from($start->toDateString())
+            ->to($end->toDateString());
+
+        // Add periods for the booking date range
+        $schedule->addPeriod('01:00', '23:59', $start);
+        $schedule->addPeriod('00:00', '23:59', Carbon::parse('2025-11-03'));
+        $schedule->addPeriod('00:00', '23:59', Carbon::parse('2025-11-04'));
+        $schedule->addPeriod('00:00', '01:00', $end); // Booking ends at 01:00 on 2025-11-05
+
+        $schedule->save();
+
+        $isAvailable = $user->isAvailableAt('2025-11-05', '02:00', '02:01');
+
+        expect($isAvailable)->toBeTrue();
+    });
+
 });

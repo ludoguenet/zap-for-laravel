@@ -155,11 +155,7 @@ class Schedule extends Model
             return $this->start_date <= ($other->end_date ?? $other->start_date);
         }
 
-        if (! $other->end_date) {
-            return $this->end_date >= $other->start_date;
-        }
-
-        return false;
+        return $this->end_date >= $other->start_date;
     }
 
     /**

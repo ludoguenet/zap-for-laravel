@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Zap\Data\FrequencyConfig;
 use Zap\Data\MonthlyFrequencyConfig\EveryXMonthsFrequencyConfig;
 use Zap\Data\MonthlyFrequencyConfig\MonthlyOrdinalWeekdayFrequencyConfig;
+use Zap\Data\RRuleFrequencyConfig;
 use Zap\Data\WeeklyFrequencyConfig\EveryXWeeksFrequencyConfig;
 use Zap\Models\Schedule;
 
@@ -46,6 +47,11 @@ class SafeFrequencyConfigCast implements CastsAttributes
             // Handle monthly ordinal weekday (e.g., "first Wednesday of month")
             if ($frequency === 'monthly_ordinal_weekday') {
                 return MonthlyOrdinalWeekdayFrequencyConfig::fromArray($configArray);
+            }
+
+            // Handle RRULE-based recurrence
+            if ($frequency === 'rrule') {
+                return RRuleFrequencyConfig::fromArray($configArray);
             }
 
             return $configArray;

@@ -16,6 +16,7 @@ use Zap\Data\MonthlyFrequencyConfig\MonthlyFrequencyConfig;
 use Zap\Data\MonthlyFrequencyConfig\MonthlyOrdinalWeekdayFrequencyConfig;
 use Zap\Data\MonthlyFrequencyConfig\QuarterlyFrequencyConfig;
 use Zap\Data\MonthlyFrequencyConfig\SemiAnnuallyFrequencyConfig;
+use Zap\Data\RRuleFrequencyConfig;
 use Zap\Data\WeeklyFrequencyConfig\BiWeeklyFrequencyConfig;
 use Zap\Data\WeeklyFrequencyConfig\EveryXWeeksFrequencyConfig;
 use Zap\Enums\Frequency;
@@ -443,6 +444,18 @@ class ScheduleBuilder
         $this->attributes['frequency_config'] = AnnuallyFrequencyConfig::fromArray(
             $config
         );
+
+        return $this;
+    }
+
+    /**
+     * Set schedule recurrence using an RFC 5545 RRULE string.
+     */
+    public function rrule(string $rrule): self
+    {
+        $this->attributes['is_recurring'] = true;
+        $this->attributes['frequency'] = 'rrule';
+        $this->attributes['frequency_config'] = new RRuleFrequencyConfig($rrule);
 
         return $this;
     }

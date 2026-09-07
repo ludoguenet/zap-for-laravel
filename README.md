@@ -139,6 +139,7 @@ $nextSlot = $doctor->getNextBookableSlot('2025-01-15', 60, 15);
 | **Ordinal weekday**  | `firstWednesdayOfMonth()`, `secondFridayOfMonth()`, `lastMondayOfMonth()` |
 | Every N weeks        | `everyThreeWeeks()`, … `everyFiftyTwoWeeks()` |
 | Every N months       | `everyFourMonths()`, … `everyElevenMonths()` |
+| **RRULE (RFC 5545)** | `rrule('FREQ=WEEKLY;BYDAY=MO,WE,FR')` |
 
 ### Recurrence examples
 
@@ -179,6 +180,27 @@ $schedule->everyThreeWeeks(['monday', 'friday'])->from('2025-01-06')->to('2025-1
 $schedule->everyFourWeeks(['tuesday'], '2025-01-06')->from('2025-01-13');
 $schedule->everyFourMonths(['day_of_month' => 15])->forYear(2025);
 $schedule->everyFiveMonths(['days_of_month' => [1, 15], 'start_month' => 2])->forYear(2025);
+```
+
+**RRULE (RFC 5545)**
+
+For complex or standards-based recurrence, pass any valid [RFC 5545 RRULE](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10) string. Powered by [php-rrule](https://github.com/rlanvin/php-rrule).
+
+```php
+// Every Monday, Wednesday, Friday
+$schedule->rrule('FREQ=WEEKLY;BYDAY=MO,WE,FR')->forYear(2025);
+
+// 1st and 15th of every month
+$schedule->rrule('FREQ=MONTHLY;BYMONTHDAY=1,15')->forYear(2025);
+
+// First Monday of every month
+$schedule->rrule('FREQ=MONTHLY;BYDAY=1MO')->forYear(2025);
+
+// Every 2 weeks on Tuesday (DTSTART derived from schedule start date)
+$schedule->rrule('FREQ=WEEKLY;INTERVAL=2;BYDAY=TU')->from('2025-01-07')->to('2025-12-31');
+
+// Every 3 days
+$schedule->rrule('FREQ=DAILY;INTERVAL=3')->from('2025-01-01')->to('2025-12-31');
 ```
 
 ### Date ranges

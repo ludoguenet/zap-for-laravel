@@ -201,6 +201,14 @@ class ScheduleBuilder extends Builder
                         $ordinalWeekday->where('is_recurring', true)
                             ->where('frequency', 'monthly_ordinal_weekday')
                             ->where('frequency_config->day_of_week', $checkDate->dayOfWeek);
+                    })
+
+                    //
+                    // 7️⃣ RRULE — include all; occurrence check delegated to shouldCreateRecurringInstance
+                    //
+                    ->orWhere(function ($rrule) {
+                        $rrule->where('is_recurring', true)
+                            ->where('frequency', 'rrule');
                     });
             });
     }
